@@ -26,22 +26,18 @@ public class CustomHitboxLib {
     // Server-side: registers the datapack loader for server data reload.
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
-        LOGGER.info("[CustomHitboxLib] Registering PartDefinitionLoader listener");
         event.addListener(new PartDefinitionLoader());
     }
 
     @SubscribeEvent
     public void onEntityJoin(EntityJoinLevelEvent event) {
         var datapackParts = PartDefinitionLoader.getLoadedParts();
-        LOGGER.info("[CustomHitboxLib] Entity joined: {}, loaded parts: {}", event.getEntity().getType().toString(), datapackParts != null ? datapackParts.size() : "null");
         if (datapackParts == null || datapackParts.isEmpty()) return;
         Entity entity = event.getEntity();
 
         for (PartDefinitionLoader.CustomPartDefinition def : datapackParts.values()) {
             if (def.matches(entity)) {
-                LOGGER.info("[CustomHitboxLib] Entity {} matched definition, ICustomMultipart: {}", entity.getType().toString(), entity instanceof ICustomMultipart);
                 if (entity instanceof ICustomMultipart mp) {
-                    LOGGER.info("[CustomHitboxLib] Applying {} custom parts to entity {}", def.parts().size(), entity.getType().toString());
                     for (PartDefinitionLoader.PartEntry part : def.parts()) {
                         mp.addCustomPart(part.name(), part.toApiDefinition());
                     }

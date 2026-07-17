@@ -14,7 +14,7 @@ Whether you're developing massive, complex bosses or simply want precise hitboxe
 *   **What features does it have?** You can attach any number of independent, precisely sized sub-hitboxes to a single entity (custom entities, vanilla mobs, or players). It handles complex positioning and automatically forwards damage to the main entity.
 *   **Why would a user want to download it?** For players, simply install this if another amazing boss or combat mod requires it to function! For developers, this library gives you the tools to easily build massive, dynamically shaped creatures and realistic interactions without fighting hardcoded Minecraft mechanics.
 
-![Demonstration of a complex multipart hitbox]
+![Demonstration](https://cdn.modrinth.com/data/cached_images/6077f076b3f62cf6838c9db571f29c988f48c8f1.png)
 
 ***
 

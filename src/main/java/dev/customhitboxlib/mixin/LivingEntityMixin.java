@@ -1,5 +1,6 @@
 package dev.customhitboxlib.mixin;
 
+import dev.customhitboxlib.CustomHitboxLib;
 import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.HitboxLibRenderState;
 import dev.customhitboxlib.api.ICustomMultipart;
@@ -64,7 +65,8 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Override
     public boolean isMultipartEntity() {
-        if (HitboxLibRenderState.suppressMultipart) return false;
+        if (HitboxLibRenderState.suppressMultipart)
+            return false;
         return hitboxlib$partArray != null && hitboxlib$partArray.length > 0;
     }
 
@@ -86,6 +88,9 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     public void addCustomPart(String name, PartDefinition definition) {
         hitboxlib$definitions.put(name, definition);
         hitboxlib$initialized = false;
+        if (!hitboxlib$initialized) {
+            hitboxlib$initialize();
+        }
     }
 
     @Override
@@ -138,15 +143,19 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Override
     public void tickCustomParts() {
-        if (hitboxlib$definitions.isEmpty()) return;
+        Entity self = (Entity) (Object) this;
+        if (hitboxlib$definitions.isEmpty()) {
+            return;
+        }
         if (!hitboxlib$initialized) {
             hitboxlib$initialize();
         }
 
-        Entity self = (Entity) (Object) this;
         for (Map.Entry<String, PartDefinition> entry : hitboxlib$definitions.entrySet()) {
             CustomEntityPart part = hitboxlib$instances.get(entry.getKey());
-            if (part == null) continue;
+            if (part == null) {
+                continue;
+            }
             PartDefinition def = entry.getValue();
             Vec3 pos = def.positioner().getPosition(self, 1.0F);
             part.xo = part.getX();
@@ -177,7 +186,8 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     @Inject(method = "pushEntities", at = @At("HEAD"))
     private void hitboxlib$pushCustomParts(CallbackInfo ci) {
         LivingEntity self = (LivingEntity) (Object) this;
-        if (self.noPhysics) return;
+        if (self.noPhysics)
+            return;
 
         Level level = self.level();
         AABB selfAabb = self.getBoundingBox();
@@ -196,23 +206,28 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
         AABB searchBox = selfAabb.inflate(4.0);
         level.getEntities(self, searchBox).forEach(other -> {
-            if (pushedEntities.contains(other)) return;
-            if (other.noPhysics) return;
+            if (pushedEntities.contains(other))
+                return;
+            if (other.noPhysics)
+                return;
 
             // Skip if other is owner of self's parts, or self is owner of other's parts
             if (selfParts != null) {
                 for (PartEntity<?> sp : selfParts) {
-                    if (sp == other) return;
-                    Entity owner = ((PartEntity<?>)sp).getParent();
-                    if (owner == other) return;
+                    if (sp == other)
+                        return;
+                    Entity owner = ((PartEntity<?>) sp).getParent();
+                    if (owner == other)
+                        return;
                 }
             }
             if (other instanceof ICustomMultipart otherMp && otherMp.hasCustomParts()) {
                 PartEntity<?>[] otherParts = other.getParts();
                 if (otherParts != null) {
                     for (PartEntity<?> op : otherParts) {
-                        Entity owner = ((PartEntity<?>)op).getParent();
-                        if (owner == self) return;
+                        Entity owner = ((PartEntity<?>) op).getParent();
+                        if (owner == self)
+                            return;
                     }
                 }
             }
@@ -230,8 +245,10 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
                         PartEntity<?>[] otherParts = other.getParts();
                         if (otherParts != null) {
                             for (PartEntity<?> otherPart : otherParts) {
-                                if (!(otherPart instanceof CustomEntityPart otherCp) || !otherCp.isPushable()) continue;
-                                if (!partBox.intersects(otherCp.getBoundingBox())) continue;
+                                if (!(otherPart instanceof CustomEntityPart otherCp) || !otherCp.isPushable())
+                                    continue;
+                                if (!partBox.intersects(otherCp.getBoundingBox()))
+                                    continue;
 
                                 hitboxlib$pushBoth(selfPart, otherCp, selfPart.getX(), selfPart.getZ(), pushedEntities);
                                 pushedEntities.add(other);
@@ -251,13 +268,16 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     }
 
     private void hitboxlib$pushBoth(Entity self, Entity other, double srcX, double srcZ, Set<Entity> pushedEntities) {
-        if (!other.isPushable()) return;
-        if (other.isPassenger()) return;
+        if (!other.isPushable())
+            return;
+        if (other.isPassenger())
+            return;
 
         double dx = other.getX() - srcX;
         double dz = other.getZ() - srcZ;
         double d2 = Math.max(Math.abs(dx), Math.abs(dz));
-        if (d2 < 0.01) return;
+        if (d2 < 0.01)
+            return;
 
         d2 = Math.sqrt(d2);
         dx /= d2;
@@ -265,19 +285,24 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         double pushX = dx * 0.02;
         double pushZ = dz * 0.02;
 
-        if (!self.isPassenger()) self.push(-pushX, 0.0, -pushZ);
+        if (!self.isPassenger())
+            self.push(-pushX, 0.0, -pushZ);
         other.push(pushX, 0.0, pushZ);
         pushedEntities.add(other);
     }
 
-    private void hitboxlib$pushPartWithEntity(Entity selfPart, Entity other, double srcX, double srcZ, Set<Entity> pushedEntities) {
-        if (!other.isPushable()) return;
-        if (other.isPassenger()) return;
+    private void hitboxlib$pushPartWithEntity(Entity selfPart, Entity other, double srcX, double srcZ,
+            Set<Entity> pushedEntities) {
+        if (!other.isPushable())
+            return;
+        if (other.isPassenger())
+            return;
 
         double dx = other.getX() - srcX;
         double dz = other.getZ() - srcZ;
         double d2 = Math.max(Math.abs(dx), Math.abs(dz));
-        if (d2 < 0.01) return;
+        if (d2 < 0.01)
+            return;
 
         d2 = Math.sqrt(d2);
         dx /= d2;
@@ -285,7 +310,8 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         double pushX = dx * 0.02;
         double pushZ = dz * 0.02;
 
-        if (!selfPart.isPassenger()) selfPart.push(-pushX, 0.0, -pushZ);
+        if (!selfPart.isPassenger())
+            selfPart.push(-pushX, 0.0, -pushZ);
         other.push(pushX, 0.0, pushZ);
         pushedEntities.add(other);
     }

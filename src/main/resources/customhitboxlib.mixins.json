@@ -10,7 +10,8 @@
   "mixins": [
     "EntityMixin",
     "LivingEntityMixin",
-    "ServerGamePacketListenerImplMixin"
+    "ServerGamePacketListenerImplMixin",
+    "MobMixin"
   ],
   "client": [
     "GameRendererMixin",

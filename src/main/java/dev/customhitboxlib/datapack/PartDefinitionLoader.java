@@ -36,21 +36,16 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
 
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> pObject, ResourceManager pResourceManager, ProfilerFiller pProfiler) {
-        CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] apply() called with {} resources", pObject.size());
         Map<String, CustomPartDefinition> newParts = new LinkedHashMap<>();
 
         for (Map.Entry<ResourceLocation, JsonElement> entry : pObject.entrySet()) {
             ResourceLocation location = entry.getKey();
             JsonElement element = entry.getValue();
-            CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Processing resource: {}", location);
 
             try {
                 CustomPartDefinition def = parseDefinition(location.toString(), element);
                 if (def != null) {
-                    CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Successfully parsed: {}", location);
                     newParts.put(location.toString(), def);
-                } else {
-                    CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] parseDefinition returned null for: {}", location);
                 }
             } catch (Exception e) {
                 CustomHitboxLib.LOGGER.error("Failed to parse custom part definition: {}", location, e);
@@ -78,13 +73,11 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
             }
 
             if (selectors.isEmpty() || partsList.isEmpty()) {
-                CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Skipping {} - selectors: {}, parts: {}", key, selectors.size(), partsList.size());
                 return null;
             }
 
             return new CustomPartDefinition(selectors, partsList, fields.mainHitboxPickable, fields.mainHitboxPushable, fields.mainHitboxCollision);
         } catch (Exception e) {
-            CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Exception in parseDefinition for {}: {}", key, e.getMessage());
             return null;
         }
     }
@@ -104,7 +97,6 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
         }
 
         if (entityId == null && nbtString == null) {
-                CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Skipping entry - no entityId or nbtString");
                 return;
             }
 
@@ -201,7 +193,7 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
             float finalOx = ox, finalOy = oy, finalOz = oz;
             return PartDefinition.of(
                 name, width, height,
-                (entity, partialTick) -> new Vec3(finalOx, finalOy, finalOz),
+                (entity, partialTick) -> new Vec3(entity.getX() + finalOx, entity.getY() + finalOy, entity.getZ() + finalOz),
                 pickable, pushable, collision, suffocate
             );
         }

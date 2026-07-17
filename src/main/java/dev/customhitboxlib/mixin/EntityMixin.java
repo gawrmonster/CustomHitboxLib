@@ -1,11 +1,13 @@
 package dev.customhitboxlib.mixin;
 
 import com.google.common.collect.ImmutableList;
+import dev.customhitboxlib.CustomHitboxLib;
 import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -49,7 +51,8 @@ public abstract class EntityMixin {
     @Inject(method = "canEnterPose", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$canEnterPose(Pose pose, CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity) (Object) this;
-        if (!(self instanceof Player player)) return;
+        if (!(self instanceof Player player))
+            return;
 
         EntityDimensions dims = self.getDimensions(pose);
         float halfWidth = dims.width / 2.0F;
@@ -62,18 +65,18 @@ public abstract class EntityMixin {
         }
     }
 
-    @Redirect(
-        method = "collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;collideBoundingBox(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/level/Level;Ljava/util/List;)Lnet/minecraft/world/phys/Vec3;")
-    )
-    private Vec3 hitboxlib$collideBoundingBox(Entity entity, Vec3 movement, AABB aabb, Level level, List<VoxelShape> entityShapes) {
+
+    @Redirect(method = "collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;collideBoundingBox(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/level/Level;Ljava/util/List;)Lnet/minecraft/world/phys/Vec3;"))
+    private Vec3 hitboxlib$collideBoundingBox(Entity entity, Vec3 movement, AABB aabb, Level level,
+            List<VoxelShape> entityShapes) {
         Entity self = (Entity) (Object) this;
 
-        if (!(self instanceof ICustomMultipart mp)) {
-            return collideWithShapes(movement, aabb, entityShapes);
+        if (!(self instanceof LivingEntity) || !(self instanceof ICustomMultipart mp)) {
+            return Entity.collideBoundingBox(entity, movement, aabb, level, entityShapes);
         }
 
-        ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList.builderWithExpectedSize(entityShapes.size() + 10);
+        ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList
+                .builderWithExpectedSize(entityShapes.size() + 10);
         entityShapeBuilder.addAll(entityShapes);
 
         PartEntity<?>[] ownParts = self.getParts();
@@ -82,15 +85,20 @@ public abstract class EntityMixin {
         List<Entity> nearbyEntities = level.getEntities(self, searchBox);
 
         for (Entity e : nearbyEntities) {
-            if (e == self) continue;
-            if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts()) continue;
+            if (e == self)
+                continue;
+            if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts())
+                continue;
 
             PartEntity<?>[] parts = e.getParts();
-            if (parts == null) continue;
+            if (parts == null)
+                continue;
 
             for (PartEntity<?> part : parts) {
-                if (!(part instanceof CustomEntityPart cp)) continue;
-                if (cp.isPushable()) continue;
+                if (!(part instanceof CustomEntityPart cp))
+                    continue;
+                if (cp.isPushable())
+                    continue;
 
                 entityShapeBuilder.add(Shapes.create(cp.getBoundingBox()));
             }
@@ -143,10 +151,12 @@ public abstract class EntityMixin {
 
         Level level = self.level();
         PartEntity<?>[] parts = self.getParts();
-        if (parts == null) return;
+        if (parts == null)
+            return;
 
         for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision()) continue;
+            if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
+                continue;
 
             AABB partBox = cp.getBoundingBox();
             int minX = (int) Math.floor(partBox.minX);
@@ -194,8 +204,8 @@ public abstract class EntityMixin {
                     return;
                 }
             }
+            cir.setReturnValue(false);
         }
 
-        cir.setReturnValue(false);
     }
 }
