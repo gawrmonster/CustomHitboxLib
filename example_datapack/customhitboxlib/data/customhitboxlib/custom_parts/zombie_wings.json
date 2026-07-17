@@ -1,0 +1,36 @@
+{
+  "id": "minecraft:zombie",
+  "main_hitbox_pickable": true,
+  "main_hitbox_pushable": false,
+  "main_hitbox_collision": true,
+  "parts": [
+    {
+      "name": "left_wing",
+      "width": 1.5,
+      "height": 0.5,
+      "offset": [
+        1.0,
+        1.5,
+        -0.2
+      ],
+      "pickable": true,
+      "pushable": false,
+      "collision": false,
+      "suffocate": false
+    },
+    {
+      "name": "right_wing",
+      "width": 1.5,
+      "height": 0.5,
+      "offset": [
+        -1.0,
+        1.5,
+        -0.2
+      ],
+      "pickable": true,
+      "pushable": false,
+      "collision": false,
+      "suffocate": false
+    }
+  ]
+}

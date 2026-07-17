@@ -29,7 +29,7 @@ Through the power of Minecraft's built-in Datapack system, you can attach entire
 *   **Universal Capability:** Works seamlessly on any loaded entity out of the box.
 *   **Live Reloading:** Tweak your custom hitboxes and use `/reload` to see the changes instantly in-game!
 
-![Datapack JSON Example]
+![Datapack JSON Example](https://cdn.modrinth.com/data/cached_images/d123ebd7199c3488f7c69ee5346511eaf732aa49.png)
 
 ***
 

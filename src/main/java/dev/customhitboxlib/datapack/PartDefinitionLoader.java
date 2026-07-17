@@ -1,88 +1,64 @@
 package dev.customhitboxlib.datapack;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import dev.customhitboxlib.CustomHitboxLib;
 import dev.customhitboxlib.api.PartDefinition;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PartDefinitionLoader {
+public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
 
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder().create();
+    private static Map<String, CustomPartDefinition> LOADED_PARTS = new LinkedHashMap<>();
 
-    public static Map<String, CustomPartDefinition> load(net.minecraft.server.MinecraftServer server) {
-        var result = new LinkedHashMap<String, CustomPartDefinition>();
-        String namespace = CustomHitboxLib.MOD_ID;
-        String basePath = "custom_parts";
-
-        Path serverDir = server.getServerDirectory().toPath();
-        Path datapacksDir = serverDir.resolve("datapacks");
-
-        if (!Files.exists(datapacksDir)) {
-            return result;
-        }
-
-        try {
-            try (DirectoryStream<Path> packDirs = Files.newDirectoryStream(datapacksDir)) {
-                for (Path packDir : packDirs) {
-                    if (!Files.isDirectory(packDir)) continue;
-                    String packId = packDir.getFileName().toString();
-                    if (!packId.equals(namespace)) continue;
-
-                    Path dataDir = packDir.resolve("data").resolve(namespace).resolve(basePath);
-                    if (!Files.exists(dataDir)) continue;
-
-                    loadJsonFilesRecursive(dataDir, result);
-                }
-            }
-        } catch (IOException e) {
-            CustomHitboxLib.LOGGER.warn("Error loading datapack parts from disk", e);
-        }
-
-        return result;
+    public PartDefinitionLoader() {
+        super(GSON, "custom_parts");
     }
 
-    private static void loadJsonFilesRecursive(Path dir, Map<String, CustomPartDefinition> result) throws IOException {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-            for (Path entry : stream) {
-                if (Files.isDirectory(entry)) {
-                    loadJsonFilesRecursive(entry, result);
-                } else if (entry.toString().endsWith(".json")) {
-                    String fileName = entry.getFileName().toString();
-                    String key = fileName.substring(0, fileName.length() - 5);
+    public static Map<String, CustomPartDefinition> getLoadedParts() {
+        return LOADED_PARTS;
+    }
 
-                    try (var is = Files.newInputStream(entry)) {
-                        JsonElement element = GSON.fromJson(new InputStreamReader(is, StandardCharsets.UTF_8), JsonElement.class);
-                        if (element == null) continue;
+    @Override
+    protected void apply(Map<ResourceLocation, JsonElement> pObject, ResourceManager pResourceManager, ProfilerFiller pProfiler) {
+        CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] apply() called with {} resources", pObject.size());
+        Map<String, CustomPartDefinition> newParts = new LinkedHashMap<>();
 
-                        CustomPartDefinition def = parseDefinition(key, element);
-                        if (def != null) {
-                            result.put(key, def);
-                        }
-                    } catch (JsonSyntaxException e) {
-                        CustomHitboxLib.LOGGER.error("Invalid JSON in datapack file: {}", entry, e);
-                    }
+        for (Map.Entry<ResourceLocation, JsonElement> entry : pObject.entrySet()) {
+            ResourceLocation location = entry.getKey();
+            JsonElement element = entry.getValue();
+            CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Processing resource: {}", location);
+
+            try {
+                CustomPartDefinition def = parseDefinition(location.toString(), element);
+                if (def != null) {
+                    CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Successfully parsed: {}", location);
+                    newParts.put(location.toString(), def);
+                } else {
+                    CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] parseDefinition returned null for: {}", location);
                 }
+            } catch (Exception e) {
+                CustomHitboxLib.LOGGER.error("Failed to parse custom part definition: {}", location, e);
             }
         }
+
+        LOADED_PARTS = newParts;
+        CustomHitboxLib.LOGGER.info("Loaded {} custom part definitions from datapacks", LOADED_PARTS.size());
     }
 
     private static CustomPartDefinition parseDefinition(String key, JsonElement element) {
@@ -102,11 +78,13 @@ public class PartDefinitionLoader {
             }
 
             if (selectors.isEmpty() || partsList.isEmpty()) {
+                CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Skipping {} - selectors: {}, parts: {}", key, selectors.size(), partsList.size());
                 return null;
             }
 
             return new CustomPartDefinition(selectors, partsList, fields.mainHitboxPickable, fields.mainHitboxPushable, fields.mainHitboxCollision);
         } catch (Exception e) {
+            CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Exception in parseDefinition for {}: {}", key, e.getMessage());
             return null;
         }
     }
@@ -125,7 +103,10 @@ public class PartDefinitionLoader {
             if (obj.has("nbt")) nbtString = obj.get("nbt").getAsString();
         }
 
-        if (entityId == null && nbtString == null) return;
+        if (entityId == null && nbtString == null) {
+                CustomHitboxLib.LOGGER.info("[PartDefinitionLoader] Skipping entry - no entityId or nbtString");
+                return;
+            }
 
         selectors.add(new SelectorEntry(entityId, nbtString));
 

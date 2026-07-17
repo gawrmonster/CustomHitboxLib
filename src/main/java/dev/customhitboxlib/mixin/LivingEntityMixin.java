@@ -141,7 +141,6 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         if (hitboxlib$definitions.isEmpty()) return;
         if (!hitboxlib$initialized) {
             hitboxlib$initialize();
-            return;
         }
 
         Entity self = (Entity) (Object) this;
