@@ -10,8 +10,11 @@
   "mixins": [
     "EntityMixin",
     "LivingEntityMixin",
+    "MoveControlMixin",
+    "PathNavigationMixin",
+    "GroundPathNavigationMixin",
     "ServerGamePacketListenerImplMixin",
-    "MobMixin"
+    "WalkNodeEvaluatorMixin"
   ],
   "client": [
     "GameRendererMixin",
