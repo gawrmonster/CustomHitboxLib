@@ -23,7 +23,6 @@ public class CustomHitboxLib {
         MinecraftForge.EVENT_BUS.register(this);
     }
 
-    // Server-side: registers the datapack loader for server data reload.
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener(new PartDefinitionLoader());
@@ -31,9 +30,10 @@ public class CustomHitboxLib {
 
     @SubscribeEvent
     public void onEntityJoin(EntityJoinLevelEvent event) {
+        Entity entity = event.getEntity();
+
         var datapackParts = PartDefinitionLoader.getLoadedParts();
         if (datapackParts == null || datapackParts.isEmpty()) return;
-        Entity entity = event.getEntity();
 
         for (PartDefinitionLoader.CustomPartDefinition def : datapackParts.values()) {
             if (def.matches(entity)) {

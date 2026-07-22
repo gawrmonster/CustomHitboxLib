@@ -9,7 +9,9 @@
   "refmap": "customhitboxlib.refmap.json",
   "mixins": [
     "EntityMixin",
+    "EntityRotationMixin",
     "LivingEntityMixin",
+    "LivingEntityRotationMixin",
     "MoveControlMixin",
     "PathNavigationMixin",
     "GroundPathNavigationMixin",
