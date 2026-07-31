@@ -43,15 +43,24 @@ public abstract class EntityRotationMixin {
     }
 
     @Inject(method = "setXRot", at = @At("HEAD"), cancellable = true)
-    private void hitboxlib$preventHeadPitchCollision(float xRot, CallbackInfo ci) {
+    private void hitboxlib$preventHeadPitchCollision(float newXRot, CallbackInfo ci) {
         Entity self = (Entity)(Object)this;
         if (!hitboxlib$shouldCheck(self)) return;
 
         float oldXRot = this.xRot;
-        this.xRot = xRot;
+        if (oldXRot == newXRot) return;
 
-        if (hitboxlib$partsCollide(self)) {
-            this.xRot = oldXRot;
+        // Check collision at old state
+        boolean oldCollides = hitboxlib$partsCollide(self);
+
+        // Check collision at new state
+        this.xRot = newXRot;
+        boolean newCollides = hitboxlib$partsCollide(self);
+
+        // Rollback
+        this.xRot = oldXRot;
+
+        if (!oldCollides && newCollides) {
             ci.cancel();
         }
     }
