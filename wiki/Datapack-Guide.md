@@ -121,7 +121,7 @@ Each entry in the `parts` array:
 | `name` | Yes | -- | Unique name for the part |
 | `width` | Yes | -- | Hitbox width in blocks |
 | `height` | Yes | -- | Hitbox height in blocks |
-| `offset` | No | `[0, 0, 0]` | `[x, y, z]` offset from entity origin |
+| `offset` | No | `[0, 0, 0]` | `[x, y, z]` offset from entity origin (world-relative, does not rotate) |
 | `pickable` | No | `true` | Can the player target this part |
 | `pushable` | No | `false` | Does this part push other entities |
 | `collision` | No | `false` | Does this part collide with blocks |

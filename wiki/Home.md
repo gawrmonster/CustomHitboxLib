@@ -13,7 +13,7 @@ CustomHitboxLib is a Forge 1.20.1 library mod that adds full **multipart entity 
 - **Developer API** -- Full Java API with built-in positioners, helper methods, and the `ICustomMultipart` interface
 - **Smart collision** -- Parts independently control block collision, entity pushing, suffocation, and pick targeting
 - **AI integration** -- Mob pathfinding and navigation automatically account for custom part positions
-- **Rotation safety** -- Parts can't clip into blocks when the entity rotates (head, body, or pitch)
+- **Rotation safety** -- Head-body angle limited to 75 degrees; parts can't clip into blocks when the entity rotates (head, body, or pitch)
 - **Damage forwarding** -- Hitting any part deals damage to the parent entity, no double-hits
 - **Client rendering** -- Green wireframe hitboxes shown in F3+B debug mode, crosshair targeting of individual parts
 

@@ -103,8 +103,11 @@ public interface PartPositioner {
 ```java
 import dev.customhitboxlib.api.PartPositioners;
 
-// Static offset from entity origin
+// Static offset from entity origin (world-relative, does not rotate)
 PartPositioners.atOffset(x, y, z)
+
+// Rotation-aware offset from entity origin (uses yBodyRot for LivingEntity)
+PartPositioners.rotating(offsetX, offsetY, offsetZ)
 
 // Fixed offset from another entity
 PartPositioners.relativeTo(anchor, x, y, z)
@@ -210,6 +213,20 @@ When `collision` is `true`, the mod's pathfinding integration automatically acco
 
 ---
 
+## Rotation Safety
+
+The mod prevents custom parts from clipping into blocks when the entity rotates. Two mechanisms are used:
+
+**Head-body angle limit (`setYRot`):** When `setYRot` is called, the mod checks if the requested yaw would put the head more than 75 degrees away from `yBodyRot`. If so, the rotation is blocked. This prevents parts with rotating positioners from swinging into walls.
+
+**Collision check (`setXRot`, `setYHeadRot`, `setYBodyRot`):** These methods are intercepted and checked against actual block collisions. If applying the new rotation would cause any custom part to intersect a solid block, the rotation is cancelled.
+
+### Datapack vs Java API Positioning
+
+Datapack `offset` values are **static** (world-relative) -- they do not rotate with the entity. For rotation-aware parts that orbit or swing with the entity, use `PartPositioners.rotating()` via the Java API.
+
+---
+
 ## Mixin Architecture
 
 For advanced users who want to understand what the mod modifies:
@@ -218,8 +235,8 @@ For advanced users who want to understand what the mod modifies:
 |---|---|---|
 | `LivingEntityMixin` | `LivingEntity` | Implements `ICustomMultipart` on all living entities |
 | `EntityMixin` | `Entity` | Part ticking, block collision, suffocation checks |
-| `EntityRotationMixin` | `Entity` | Prevents `setYRot`/`setXRot` from clipping parts into blocks |
-| `LivingEntityRotationMixin` | `LivingEntity` | Prevents `setYHeadRot`/`setYBodyRot` from clipping, tick-end safety |
+| `EntityRotationMixin` | `Entity` | Limits `setYRot` to 75-degree head-body diff; prevents `setXRot` from clipping parts into blocks |
+| `LivingEntityRotationMixin` | `LivingEntity` | Prevents `setYHeadRot`/`setYBodyRot` from clipping parts into blocks |
 | `MoveControlMixin` | `MoveControl` | Part-aware movement for mob AI |
 | `PathNavigationMixin` | `PathNavigation` | Part-aware path following |
 | `GroundPathNavigationMixin` | `GroundPathNavigation` | Part-aware surface detection |

@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import dev.customhitboxlib.CustomHitboxLib;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityRotationMixin {
@@ -22,17 +24,28 @@ public abstract class LivingEntityRotationMixin {
     public float yHeadRot;
 
     @Shadow
+    public float yHeadRotO;
+
+    @Shadow
     public float yBodyRot;
+
+    @Shadow
+    protected abstract float getYHeadRot();
 
     @Inject(method = "setYHeadRot", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$preventHeadYawCollision(float yHeadRot, CallbackInfo ci) {
-        Entity self = (Entity)(Object)this;
-        if (!hitboxlib$shouldCheck(self)) return;
+        Entity self = (Entity) (Object) this;
+        if (!hitboxlib$shouldCheck(self))
+            return;
+
+        boolean wasColliding = hitboxlib$partsCollide(self);
 
         float oldYHeadRot = this.yHeadRot;
         this.yHeadRot = yHeadRot;
 
-        if (hitboxlib$partsCollide(self)) {
+        boolean nowColliding = hitboxlib$partsCollide(self);
+
+        if (!wasColliding && nowColliding) {
             this.yHeadRot = oldYHeadRot;
             ci.cancel();
         }
@@ -40,97 +53,80 @@ public abstract class LivingEntityRotationMixin {
 
     @Inject(method = "setYBodyRot", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$preventBodyRenderYawCollision(float yBodyRot, CallbackInfo ci) {
-        Entity self = (Entity)(Object)this;
-        if (!hitboxlib$shouldCheck(self)) return;
+        Entity self = (Entity) (Object) this;
+        if (!hitboxlib$shouldCheck(self))
+            return;
+
+        boolean wasColliding = hitboxlib$partsCollide(self);
 
         float oldYBodyRot = this.yBodyRot;
         this.yBodyRot = yBodyRot;
 
-        if (hitboxlib$partsCollide(self)) {
+        boolean nowColliding = hitboxlib$partsCollide(self);
+
+        if (!wasColliding && nowColliding) {
             this.yBodyRot = oldYBodyRot;
             ci.cancel();
         }
     }
 
-    @Inject(method = "tick", at = @At("TAIL"))
-    private void hitboxlib$snapRotationOnCollision(CallbackInfo ci) {
-        Entity self = (Entity)(Object)this;
-        if (!hitboxlib$shouldCheck(self)) return;
 
-        PartEntity<?>[] parts = ((ICustomMultipart) self).getCustomParts();
-        if (parts == null) return;
+    @Inject(method = "tickHeadTurn", at = @At("TAIL"))
+    private void hitboxlib$preventTickHeadTurnCollision(CallbackInfoReturnable<Boolean> cir) {
+        Entity self = (Entity) (Object) this;
+        if (!hitboxlib$shouldCheck(self))
+            return;
 
-        ((ICustomMultipart) self).tickCustomParts();
-        if (!hitboxlib$partsCollideWithBlocks(self, parts)) return;
+        if (!hitboxlib$partsCollide(self))
+            return;
 
-        float savedYHeadRot = this.yHeadRot;
-        float savedYBodyRot = this.yBodyRot;
-
-        this.yHeadRot = self.getYRot();
-        hitboxlib$repositionParts(self, parts);
-        if (!hitboxlib$partsCollideWithBlocks(self, parts)) return;
-
-        this.yHeadRot = savedYHeadRot;
-        this.yBodyRot = self.getYRot();
-        hitboxlib$repositionParts(self, parts);
-        if (!hitboxlib$partsCollideWithBlocks(self, parts)) return;
-
-        this.yHeadRot = savedYHeadRot;
-        this.yBodyRot = savedYBodyRot;
+        this.yBodyRot = hitboxlib$prevYBodyRot;
+        //this.yHeadRot = this.yHeadRotO;
     }
+
+    @Inject(method = "tickHeadTurn", at = @At("HEAD"))
+    private void hitboxlib$capturePreRotation(CallbackInfoReturnable<Boolean> cir) {
+        Entity self = (Entity) (Object) this;
+        if (!hitboxlib$shouldCheck(self))
+            return;
+
+        hitboxlib$prevYBodyRot = this.yBodyRot;
+    }
+
+
+    @Unique
+    private float hitboxlib$prevYBodyRot;
 
     @Unique
     private static boolean hitboxlib$shouldCheck(Entity self) {
-        if (!(self instanceof ICustomMultipart mp)) return false;
-        if (mp.isMainHitboxCollision()) return false;
+        if (!(self instanceof ICustomMultipart mp))
+            return false;
+        if (mp.isMainHitboxCollision())
+            return false;
         PartEntity<?>[] parts = mp.getCustomParts();
         return parts != null && parts.length > 0;
     }
 
     @Unique
-    private static void hitboxlib$repositionParts(Entity self, PartEntity<?>[] parts) {
-        for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp)) continue;
-            if (cp.getPositioner() == null) continue;
-
-            Vec3 pos = cp.getPositioner().getPosition(self, 1.0F);
-            cp.setPos(pos.x, pos.y, pos.z);
-        }
-    }
-
-    @Unique
-    private static boolean hitboxlib$partsCollideWithBlocks(Entity self, PartEntity<?>[] parts) {
-        for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp)) continue;
-            if (!cp.hasCollision()) continue;
-
-            AABB partBox = cp.getBoundingBox();
-            for (VoxelShape shape : self.level().getBlockCollisions(null, partBox)) {
-                if (!shape.isEmpty()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Unique
     private static boolean hitboxlib$partsCollide(Entity self) {
         PartEntity<?>[] parts = ((ICustomMultipart) self).getCustomParts();
-        if (parts == null) return false;
+        if (parts == null)
+            return false;
 
         for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp)) continue;
-            if (!cp.hasCollision()) continue;
-            if (cp.getPositioner() == null) continue;
+            if (!(part instanceof CustomEntityPart cp))
+                continue;
+            if (!cp.hasCollision())
+                continue;
+            if (cp.getPositioner() == null)
+                continue;
 
             Vec3 newPos = cp.getPositioner().getPosition(self, 1.0F);
             float halfWidth = cp.getBbWidth() / 2.0F;
             float height = cp.getBbHeight();
             AABB partBox = new AABB(
-                newPos.x - halfWidth, newPos.y, newPos.z - halfWidth,
-                newPos.x + halfWidth, newPos.y + height, newPos.z + halfWidth
-            );
+                    newPos.x - halfWidth, newPos.y, newPos.z - halfWidth,
+                    newPos.x + halfWidth, newPos.y + height, newPos.z + halfWidth);
 
             for (VoxelShape shape : self.level().getBlockCollisions(null, partBox)) {
                 if (!shape.isEmpty()) {

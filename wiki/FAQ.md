@@ -72,7 +72,11 @@ All damage to parts is automatically forwarded to the parent entity via `hurt()`
 
 ### How do I make a part follow the entity's rotation?
 
-Write a positioner that reads `entity.getYRot()` and computes position based on the facing direction. See the [Examples](Examples.md) page.
+Use `PartPositioners.rotating(offsetX, offsetY, offsetZ)` which rotates the offset around the entity's `yBodyRot`. For custom rotation logic, write a positioner that reads `entity.getYRot()` and computes position based on the facing direction. See the [Examples](Examples.md) page.
+
+### What is the head-body rotation limit?
+
+The mod limits `setYRot` to a 75-degree difference between the head yaw and body yaw. This prevents parts with rotating positioners from swinging into walls when the player turns quickly. The limit only applies to entities with custom parts.
 
 ---
 

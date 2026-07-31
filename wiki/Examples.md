@@ -160,6 +160,16 @@ PartPositioner facePositioner = (entity, partialTick) -> {
 MultipartHelper.addPart(entity, "face", 0.3F, 0.3F, facePositioner);
 ```
 
+### Built-in Rotating Positioner
+
+A part that rotates with the entity using `PartPositioners.rotating()`. The offset is applied relative to `yBodyRot`, so the part swings with the body:
+
+```java
+// 2 blocks behind the entity, rotates with body yaw
+MultipartHelper.addPart(entity, "back_part", 2.0F, 2.0F,
+    PartPositioners.rotating(0, 0, -2), true, true, true, false);
+```
+
 ### Custom Positioner (Orbiting Part)
 
 A part that orbits around the entity's head:

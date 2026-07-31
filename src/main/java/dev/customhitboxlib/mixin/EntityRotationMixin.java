@@ -3,7 +3,6 @@ package dev.customhitboxlib.mixin;
 import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -14,6 +13,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.util.Mth;
 
 @Mixin(Entity.class)
 public abstract class EntityRotationMixin {
@@ -25,15 +26,18 @@ public abstract class EntityRotationMixin {
     private float xRot;
 
     @Inject(method = "setYRot", at = @At("HEAD"), cancellable = true)
-    private void hitboxlib$preventBodyYawCollision(float yRot, CallbackInfo ci) {
+    private void hitboxlib$preventBodyYawCollision(float newYRot, CallbackInfo ci) {
         Entity self = (Entity)(Object)this;
-        if (!hitboxlib$shouldCheck(self)) return;
+        if (self == null || !hitboxlib$shouldCheck(self)) return;
 
-        float oldYRot = this.yRot;
-        this.yRot = yRot;
+        if (!(self instanceof LivingEntity living)) return;
 
-        if (hitboxlib$partsCollide(self)) {
-            this.yRot = oldYRot;
+        float oldYRot = living.getYRot();
+        if (oldYRot == newYRot) return;
+
+        float headBodyDiff = Mth.wrapDegrees(newYRot - living.yBodyRot);
+
+        if (Math.abs(headBodyDiff) > 75.0F) {
             ci.cancel();
         }
     }
