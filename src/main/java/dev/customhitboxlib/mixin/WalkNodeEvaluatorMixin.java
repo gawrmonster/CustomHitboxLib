@@ -8,7 +8,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.entity.PartEntity;
+import net.neoforged.neoforge.entity.PartEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -57,7 +57,7 @@ public abstract class WalkNodeEvaluatorMixin extends net.minecraft.world.level.p
         int i = (int) Math.floor(partMinY);
 
         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
-        net.minecraft.world.level.block.state.BlockState blockstate = this.level.getBlockState(blockpos$mutableblockpos.set(entity.getX(), (double)i, entity.getZ()));
+        net.minecraft.world.level.block.state.BlockState blockstate = this.currentContext.getBlockState(blockpos$mutableblockpos.set(entity.getX(), (double)i, entity.getZ()));
 
         if (!entity.canStandOnFluid(blockstate.getFluidState())) {
             if (this.canFloat() && entity.isInWater()) {
@@ -67,20 +67,20 @@ public abstract class WalkNodeEvaluatorMixin extends net.minecraft.world.level.p
                         break;
                     }
                     ++i;
-                    blockstate = this.level.getBlockState(blockpos$mutableblockpos.set(entity.getX(), (double)i, entity.getZ()));
+                    blockstate = this.currentContext.getBlockState(blockpos$mutableblockpos.set(entity.getX(), (double)i, entity.getZ()));
                 }
             } else if (entity.onGround()) {
                 i = Mth.floor(partMinY + 0.5D);
             } else {
                 BlockPos blockpos;
-                for (blockpos = entity.blockPosition(); (this.level.getBlockState(blockpos).isAir() || this.level.getBlockState(blockpos).isPathfindable(this.level, blockpos, net.minecraft.world.level.pathfinder.PathComputationType.LAND)) && blockpos.getY() > entity.level().getMinBuildHeight(); blockpos = blockpos.below()) {
+                for (blockpos = entity.blockPosition(); (this.currentContext.getBlockState(blockpos).isAir() || this.currentContext.getBlockState(blockpos).isPathfindable(net.minecraft.world.level.pathfinder.PathComputationType.LAND)) && blockpos.getY() > entity.level().getMinBuildHeight(); blockpos = blockpos.below()) {
                 }
                 i = blockpos.above().getY();
             }
         } else {
             while (entity.canStandOnFluid(blockstate.getFluidState())) {
                 ++i;
-                blockstate = this.level.getBlockState(blockpos$mutableblockpos.set(entity.getX(), (double)i, entity.getZ()));
+                blockstate = this.currentContext.getBlockState(blockpos$mutableblockpos.set(entity.getX(), (double)i, entity.getZ()));
             }
             --i;
         }

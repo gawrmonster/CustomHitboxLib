@@ -1,14 +1,14 @@
 package dev.customhitboxlib.api;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.entity.PartEntity;
+import net.neoforged.neoforge.entity.PartEntity;
 
 public class CustomEntityPart extends PartEntity<Entity> {
     private final EntityDimensions size;
@@ -59,7 +59,7 @@ public class CustomEntityPart extends PartEntity<Entity> {
     }
 
     @Override
-    protected void defineSynchedData() {}
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {}
@@ -136,10 +136,5 @@ public class CustomEntityPart extends PartEntity<Entity> {
     @Override
     public EntityDimensions getDimensions(Pose pose) {
         return size;
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return null;
     }
 }

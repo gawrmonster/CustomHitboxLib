@@ -5,11 +5,12 @@ import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.entity.PartEntity;
+import net.neoforged.neoforge.entity.PartEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,18 +26,14 @@ public class GameRendererMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.gameMode == null) return;
 
-        Entity player = mc.player;
+        Player player = mc.player;
         Vec3 eyePos = player.getEyePosition(pPartialTick);
         Vec3 lookVec = player.getViewVector(pPartialTick);
 
-        double range = mc.gameMode.getPickRange();
-        boolean extendedRange = range > 3.0D;
-        if (mc.gameMode.hasFarPickRange()) {
-            range = 6.0D;
-            extendedRange = false;
-        }
+        double blockRange = player.blockInteractionRange();
+        double entityRange = player.entityInteractionRange();
+        double searchRange = Math.max(blockRange, entityRange);
 
-        double searchRange = range;
         Vec3 endPos = eyePos.add(lookVec.scale(searchRange));
 
         AABB searchAABB = player.getBoundingBox()
@@ -70,12 +67,6 @@ public class GameRendererMixin {
                     bestDistSq = 0.0D;
                     currentHit = new EntityHitResult(entity, eyePos);
                 }
-            }
-        }
-
-        if (extendedRange && currentHit instanceof EntityHitResult ehr) {
-            if (ehr.getLocation().distanceToSqr(eyePos) > 9.0D) {
-                return;
             }
         }
 

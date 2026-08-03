@@ -2,7 +2,7 @@ package dev.customhitboxlib.api;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
-import net.minecraftforge.entity.PartEntity;
+import net.neoforged.neoforge.entity.PartEntity;
 
 public final class MultipartHelper {
     private MultipartHelper() {}

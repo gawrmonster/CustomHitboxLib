@@ -12,7 +12,7 @@ import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.entity.PartEntity;
+import net.neoforged.neoforge.entity.PartEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -127,7 +127,7 @@ public abstract class MoveControlMixin {
             BlockPos blockpos = this.mob.blockPosition();
             BlockState blockstate = this.mob.level().getBlockState(blockpos);
             VoxelShape voxelshape = blockstate.getCollisionShape(this.mob.level(), blockpos);
-            if (d2 > (double)this.mob.getStepHeight() && closestDistSq < (double)Math.max(1.0F, closestPartWidth)
+            if (d2 > this.mob.getAttributeValue(Attributes.STEP_HEIGHT) && closestDistSq < (double)Math.max(1.0F, closestPartWidth)
                     || !voxelshape.isEmpty() && mobY < voxelshape.max(Direction.Axis.Y) + (double)blockpos.getY()
                     && !blockstate.is(BlockTags.DOORS) && !blockstate.is(BlockTags.FENCES)) {
                 this.mob.getJumpControl().jump();

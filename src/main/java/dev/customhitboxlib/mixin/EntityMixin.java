@@ -17,7 +17,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.entity.PartEntity;
+import net.neoforged.neoforge.entity.PartEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -55,10 +55,10 @@ public abstract class EntityMixin {
             return;
 
         EntityDimensions dims = self.getDimensions(pose);
-        float halfWidth = dims.width / 2.0F;
+        float halfWidth = dims.width() / 2.0F;
         AABB boundingBox = new AABB(
                 self.getX() - halfWidth, self.getY(), self.getZ() - halfWidth,
-                self.getX() + halfWidth, self.getY() + dims.height, self.getZ() + halfWidth);
+                self.getX() + halfWidth, self.getY() + dims.height(), self.getZ() + halfWidth);
 
         if (self.level().noCollision(player, boundingBox.deflate(1.0E-7D))) {
             cir.setReturnValue(true);

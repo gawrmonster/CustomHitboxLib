@@ -3,24 +3,22 @@ package dev.customhitboxlib;
 import dev.customhitboxlib.api.ICustomMultipart;
 import dev.customhitboxlib.datapack.PartDefinitionLoader;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.eventbus.api.IEventBus;
 
 @Mod(CustomHitboxLib.MOD_ID)
 public class CustomHitboxLib {
     public static final String MOD_ID = "customhitboxlib";
     public static final Logger LOGGER = LogManager.getLogger();
 
-    public CustomHitboxLib() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-        MinecraftForge.EVENT_BUS.register(this);
+    public CustomHitboxLib(IEventBus modEventBus) {
+        NeoForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent
