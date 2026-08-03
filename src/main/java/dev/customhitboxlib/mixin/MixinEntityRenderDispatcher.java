@@ -26,7 +26,10 @@ public abstract class MixinEntityRenderDispatcher {
         PoseStack pPoseStack,
         VertexConsumer pBuffer,
         Entity pEntity,
-        float pPartialTicks,
+        float pRed,
+        float pGreen,
+        float pBlue,
+        float pAlpha,
         CallbackInfo ci
     ) {
         if (pEntity instanceof ICustomMultipart mp && mp.hasCustomParts()) {
@@ -42,23 +45,26 @@ public abstract class MixinEntityRenderDispatcher {
         PoseStack pPoseStack,
         VertexConsumer pBuffer,
         Entity pEntity,
-        float pPartialTicks,
+        float pRed,
+        float pGreen,
+        float pBlue,
+        float pAlpha,
         CallbackInfo ci
     ) {
         PartEntity<?>[] parts = pEntity.getParts();
         HitboxLibRenderState.suppressMultipart = false;
         if (parts == null) return;
 
-        double entityX = pEntity.xo + (pEntity.getX() - pEntity.xo) * pPartialTicks;
-        double entityY = pEntity.yo + (pEntity.getY() - pEntity.yo) * pPartialTicks;
-        double entityZ = pEntity.zo + (pEntity.getZ() - pEntity.zo) * pPartialTicks;
+        double entityX = pEntity.xo + (pEntity.getX() - pEntity.xo) * pRed;
+        double entityY = pEntity.yo + (pEntity.getY() - pEntity.yo) * pRed;
+        double entityZ = pEntity.zo + (pEntity.getZ() - pEntity.zo) * pRed;
 
         for (PartEntity<?> part : parts) {
             if (part == pEntity) continue;
 
             Vec3 partPos;
             if (part instanceof CustomEntityPart cp && cp.getPositioner() != null) {
-                partPos = cp.getInterpolatedPosition(pPartialTicks);
+                partPos = cp.getInterpolatedPosition(pRed);
                 Vec3 tickOffset = new Vec3(
                     pEntity.getX() - entityX,
                     pEntity.getY() - entityY,
@@ -67,9 +73,9 @@ public abstract class MixinEntityRenderDispatcher {
                 partPos = partPos.subtract(tickOffset);
             } else {
                 partPos = new Vec3(
-                    part.xo + (part.getX() - part.xo) * pPartialTicks,
-                    part.yo + (part.getY() - part.yo) * pPartialTicks,
-                    part.zo + (part.getZ() - part.zo) * pPartialTicks
+                    part.xo + (part.getX() - part.xo) * pRed,
+                    part.yo + (part.getY() - part.yo) * pRed,
+                    part.zo + (part.getZ() - part.zo) * pRed
                 );
             }
 

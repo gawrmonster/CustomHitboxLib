@@ -27,15 +27,4 @@ public abstract class ServerGamePacketListenerImplMixin {
         }
         return this.isPlayerCollidingWithAnythingNew(level, oldBB, x, y, z);
     }
-
-    @Redirect(
-        method = "handleMovePlayer(Lnet/minecraft/network/protocol/game/ServerboundMovePlayerPacket;)V",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;m_5803_()Z", ordinal = 1, remap = false)
-    )
-    private boolean hitboxlib$bypassMovedWrongly(ServerPlayer player) {
-        if (player instanceof ICustomMultipart mp && !mp.isMainHitboxCollision()) {
-            return true;
-        }
-        return player.isSwimming();
-    }
 }

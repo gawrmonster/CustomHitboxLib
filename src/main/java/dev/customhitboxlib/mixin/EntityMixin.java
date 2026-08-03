@@ -1,7 +1,6 @@
 package dev.customhitboxlib.mixin;
 
 import com.google.common.collect.ImmutableList;
-import dev.customhitboxlib.CustomHitboxLib;
 import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.core.BlockPos;
@@ -47,24 +46,6 @@ public abstract class EntityMixin {
             mp.tickCustomParts();
         }
     }
-
-    @Inject(method = "canEnterPose", at = @At("HEAD"), cancellable = true)
-    private void hitboxlib$canEnterPose(Pose pose, CallbackInfoReturnable<Boolean> cir) {
-        Entity self = (Entity) (Object) this;
-        if (!(self instanceof Player player))
-            return;
-
-        EntityDimensions dims = self.getDimensions(pose);
-        float halfWidth = dims.width() / 2.0F;
-        AABB boundingBox = new AABB(
-                self.getX() - halfWidth, self.getY(), self.getZ() - halfWidth,
-                self.getX() + halfWidth, self.getY() + dims.height(), self.getZ() + halfWidth);
-
-        if (self.level().noCollision(player, boundingBox.deflate(1.0E-7D))) {
-            cir.setReturnValue(true);
-        }
-    }
-
 
     @Redirect(method = "collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;collideBoundingBox(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/level/Level;Ljava/util/List;)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 hitboxlib$collideBoundingBox(Entity entity, Vec3 movement, AABB aabb, Level level,

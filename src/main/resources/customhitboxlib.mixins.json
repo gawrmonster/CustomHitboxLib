@@ -16,6 +16,7 @@
     "MobRotationMixin",
     "MoveControlMixin",
     "PathNavigationMixin",
+    "PlayerMixin",
     "GroundPathNavigationMixin",
     "ServerGamePacketListenerImplMixin",
     "WalkNodeEvaluatorMixin"
