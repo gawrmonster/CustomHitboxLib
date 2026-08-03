@@ -8,6 +8,7 @@
   },
   "refmap": "customhitboxlib.refmap.json",
   "mixins": [
+    "BlockItemMixin",
     "EntityMixin",
     "EntityRotationMixin",
     "LivingEntityMixin",
