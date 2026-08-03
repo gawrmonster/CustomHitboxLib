@@ -122,10 +122,39 @@ Each entry in the `parts` array:
 | `width` | Yes | -- | Hitbox width in blocks |
 | `height` | Yes | -- | Hitbox height in blocks |
 | `offset` | No | `[0, 0, 0]` | `[x, y, z]` offset from entity origin (world-relative, does not rotate) |
+| `positioner` | No | -- | Object specifying a positioner type and offset (see below) |
 | `pickable` | No | `true` | Can the player target this part |
 | `pushable` | No | `false` | Does this part push other entities |
 | `collision` | No | `false` | Does this part collide with blocks |
 | `suffocate` | No | `false` | Does this part cause suffocation damage inside blocks |
+
+### Positioner Object
+
+Instead of a plain `offset` array, you can use a `positioner` object to control how the offset behaves:
+
+```json
+{
+  "positioner": {
+    "type": "rotating",
+    "offset": [1.0, 0.5, 0.0]
+  }
+}
+```
+
+| Field | Required | Default | Description |
+|---|---|---|---|
+| `type` | No | `"offset"` | Positioner type (see table below) |
+| `offset` | No | `[0, 0, 0]` | `[x, y, z]` offset values |
+
+**Positioner types:**
+
+| Type | Behavior |
+|---|---|
+| `"offset"` | Static offset from entity origin. Does not rotate. (Default) |
+| `"rotating"` | Offset rotates with the entity's **body yaw** (`yBodyRot`) |
+| `"rotating_head"` | Offset rotates with the entity's **head yaw** (`yHeadRot`) |
+
+The legacy `"offset": [x, y, z]` shorthand is still supported and behaves the same as `"type": "offset"`.
 
 ---
 
@@ -156,7 +185,10 @@ A zombie with wings:
       "name": "left_wing",
       "width": 1.5,
       "height": 0.5,
-      "offset": [1.0, 1.0, -0.2],
+      "positioner": {
+        "type": "rotating",
+        "offset": [1.0, 1.0, -0.2]
+      },
       "pickable": true,
       "pushable": false,
       "collision": false,
@@ -166,7 +198,10 @@ A zombie with wings:
       "name": "right_wing",
       "width": 1.5,
       "height": 0.5,
-      "offset": [-1.0, 1.50, -0.2],
+      "positioner": {
+        "type": "rotating",
+        "offset": [-1.0, 1.50, -0.2]
+      },
       "pickable": true,
       "pushable": false,
       "collision": false,

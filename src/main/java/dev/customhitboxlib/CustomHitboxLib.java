@@ -18,8 +18,8 @@ public class CustomHitboxLib {
     public static final String MOD_ID = "customhitboxlib";
     public static final Logger LOGGER = LogManager.getLogger();
 
-    public CustomHitboxLib(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
+    public CustomHitboxLib() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         MinecraftForge.EVENT_BUS.register(this);
     }
 

@@ -109,6 +109,9 @@ PartPositioners.atOffset(x, y, z)
 // Rotation-aware offset from entity origin (uses yBodyRot for LivingEntity)
 PartPositioners.rotating(offsetX, offsetY, offsetZ)
 
+// Rotation-aware offset from entity origin (uses yHeadRot for LivingEntity)
+PartPositioners.rotatingHead(offsetX, offsetY, offsetZ)
+
 // Fixed offset from another entity
 PartPositioners.relativeTo(anchor, x, y, z)
 
@@ -223,7 +226,13 @@ The mod prevents custom parts from clipping into blocks when the entity rotates.
 
 ### Datapack vs Java API Positioning
 
-Datapack `offset` values are **static** (world-relative) -- they do not rotate with the entity. For rotation-aware parts that orbit or swing with the entity, use `PartPositioners.rotating()` via the Java API.
+Datapack parts support three positioner types via the `"positioner"` object:
+
+- `"offset"` -- Static offset (world-relative, does not rotate). Equivalent to `PartPositioners.atOffset()`.
+- `"rotating"` -- Offset rotates with the entity's body yaw. Equivalent to `PartPositioners.rotating()`.
+- `"rotating_head"` -- Offset rotates with the entity's head yaw. Equivalent to `PartPositioners.rotatingHead()`.
+
+The legacy `"offset": [x, y, z]` shorthand defaults to `"type": "offset"`. For more advanced positioners (e.g. `following`, `lerpTo`, custom lambdas), use the Java API.
 
 ---
 

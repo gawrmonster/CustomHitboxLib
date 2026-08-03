@@ -35,6 +35,21 @@ public abstract class EntityRotationMixin {
         float oldYRot = living.getYRot();
         if (oldYRot == newYRot) return;
 
+        // Check collision at old state
+        boolean oldCollides = hitboxlib$partsCollide(self);
+
+        // Check collision at new state
+        this.yRot = newYRot;
+        boolean newCollides = hitboxlib$partsCollide(self);
+
+        // Rollback
+        this.yRot = oldYRot;
+
+        if (!oldCollides && newCollides) {
+            ci.cancel();
+            return;
+        }
+
         float headBodyDiff = Mth.wrapDegrees(newYRot - living.yBodyRot);
 
         if (Math.abs(headBodyDiff) > 75.0F) {

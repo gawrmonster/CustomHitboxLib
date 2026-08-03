@@ -28,6 +28,19 @@ public final class PartPositioners {
         };
     }
 
+    public static PartPositioner rotatingHead(double offsetX, double offsetY, double offsetZ) {
+        return (entity, partialTick) -> {
+            float headYaw = entity.getYRot();
+            float yawRad = (float) Math.toRadians(headYaw);
+            double sin = Mth.sin(yawRad);
+            double cos = Mth.cos(yawRad);
+            return new Vec3(
+                    entity.getX() + offsetX * cos - offsetZ * sin,
+                    entity.getY() + offsetY,
+                    entity.getZ() + offsetX * sin + offsetZ * cos);
+        };
+    }
+
     public static PartPositioner relativeTo(Entity anchor, double x, double y, double z) {
         return (entity, partialTick) -> anchor.position().add(x, y, z);
     }

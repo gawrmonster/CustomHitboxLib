@@ -6,6 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.customhitboxlib.CustomHitboxLib;
 import dev.customhitboxlib.api.PartDefinition;
+import dev.customhitboxlib.api.PartPositioner;
+import dev.customhitboxlib.api.PartPositioners;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -114,7 +116,17 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
             float height = partObj.get("height").getAsFloat();
 
             float ox = 0, oy = 0, oz = 0;
-            if (partObj.has("offset")) {
+            String positionerType = "offset";
+            if (partObj.has("positioner")) {
+                JsonObject posObj = partObj.getAsJsonObject("positioner");
+                if (posObj.has("type")) positionerType = posObj.get("type").getAsString();
+                if (posObj.has("offset")) {
+                    var arr = posObj.getAsJsonArray("offset");
+                    ox = arr.get(0).getAsFloat();
+                    oy = arr.get(1).getAsFloat();
+                    oz = arr.get(2).getAsFloat();
+                }
+            } else if (partObj.has("offset")) {
                 var arr = partObj.getAsJsonArray("offset");
                 ox = arr.get(0).getAsFloat();
                 oy = arr.get(1).getAsFloat();
@@ -126,7 +138,7 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
             boolean collision = partObj.has("collision") && partObj.get("collision").getAsBoolean();
             boolean suffocate = partObj.has("suffocate") && partObj.get("suffocate").getAsBoolean();
 
-            partsList.add(new PartEntry(name, width, height, ox, oy, oz, pickable, pushable, collision, suffocate));
+            partsList.add(new PartEntry(name, width, height, ox, oy, oz, positionerType, pickable, pushable, collision, suffocate));
         }
     }
 
@@ -187,13 +199,19 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
     public record PartEntry(
         String name, float width, float height,
         float ox, float oy, float oz,
+        String positionerType,
         boolean pickable, boolean pushable, boolean collision, boolean suffocate
     ) {
         public PartDefinition toApiDefinition() {
             float finalOx = ox, finalOy = oy, finalOz = oz;
+            PartPositioner positioner = switch (positionerType) {
+                case "rotating" -> PartPositioners.rotating(finalOx, finalOy, finalOz);
+                case "rotating_head" -> PartPositioners.rotatingHead(finalOx, finalOy, finalOz);
+                default -> (entity, partialTick) -> new Vec3(entity.getX() + finalOx, entity.getY() + finalOy, entity.getZ() + finalOz);
+            };
             return PartDefinition.of(
                 name, width, height,
-                (entity, partialTick) -> new Vec3(entity.getX() + finalOx, entity.getY() + finalOy, entity.getZ() + finalOz),
+                positioner,
                 pickable, pushable, collision, suffocate
             );
         }

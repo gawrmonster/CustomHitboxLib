@@ -110,9 +110,67 @@ Only apply parts when the entity has specific NBT data.
       "name": "heavy_armor",
       "width": 1.2,
       "height": 2.2,
-      "offset": [0, 0, 0],
+      "positioner": {
+        "type": "rotating",
+        "offset": [0, 0, 0]
+      },
       "collision": true,
       "pushable": true
+    }
+  ]
+}
+```
+
+### Rotating Parts (Body Yaw)
+
+Parts that follow the entity's body rotation. Useful for limbs, wings, or armor that should swing when the entity turns.
+
+**File:** `data/mymod/custom_parts/spider_legs.json`
+
+```json
+{
+  "id": "minecraft:spider",
+  "parts": [
+    {
+      "name": "left_leg_front",
+      "width": 0.3,
+      "height": 0.3,
+      "positioner": {
+        "type": "rotating",
+        "offset": [1.0, 0.5, 0.5]
+      }
+    },
+    {
+      "name": "right_leg_front",
+      "width": 0.3,
+      "height": 0.3,
+      "positioner": {
+        "type": "rotating",
+        "offset": [-1.0, 0.5, 0.5]
+      }
+    }
+  ]
+}
+```
+
+### Rotating Parts (Head Yaw)
+
+Parts that follow the entity's head rotation. Useful for accessories that should track where the entity is looking.
+
+**File:** `data/mymod/custom_parts/head_accessory.json`
+
+```json
+{
+  "id": "minecraft:zombie",
+  "parts": [
+    {
+      "name": "head_lantern",
+      "width": 0.3,
+      "height": 0.3,
+      "positioner": {
+        "type": "rotating_head",
+        "offset": [0.4, 0.2, 0.0]
+      }
     }
   ]
 }
@@ -168,6 +226,16 @@ A part that rotates with the entity using `PartPositioners.rotating()`. The offs
 // 2 blocks behind the entity, rotates with body yaw
 MultipartHelper.addPart(entity, "back_part", 2.0F, 2.0F,
     PartPositioners.rotating(0, 0, -2), true, true, true, false);
+```
+
+### Built-in Head-Rotating Positioner
+
+A part that rotates with the entity's head using `PartPositioners.rotatingHead()`. The offset is applied relative to `yHeadRot`, so the part follows where the entity is looking:
+
+```java
+// 0.4 blocks to the right of the head, rotates with head yaw
+MultipartHelper.addPart(entity, "head_accessory", 0.3F, 0.3F,
+    PartPositioners.rotatingHead(0.4, 0.2, 0), true, false, false, false);
 ```
 
 ### Custom Positioner (Orbiting Part)
