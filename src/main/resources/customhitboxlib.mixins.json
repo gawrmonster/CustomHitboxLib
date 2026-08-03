@@ -13,6 +13,7 @@
     "EntityRotationMixin",
     "LivingEntityMixin",
     "LivingEntityRotationMixin",
+    "MobRotationMixin",
     "MoveControlMixin",
     "PathNavigationMixin",
     "GroundPathNavigationMixin",

@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.util.Mth;
 
 @Mixin(Entity.class)
@@ -52,7 +53,7 @@ public abstract class EntityRotationMixin {
 
         float headBodyDiff = Mth.wrapDegrees(newYRot - living.yBodyRot);
 
-        if (Math.abs(headBodyDiff) > 75.0F) {
+        if (self instanceof Player && Math.abs(headBodyDiff) > 75.0F) {
             ci.cancel();
         }
     }
