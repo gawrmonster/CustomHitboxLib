@@ -29,14 +29,10 @@ public class GameRendererMixin {
         Vec3 eyePos = player.getEyePosition(pPartialTick);
         Vec3 lookVec = player.getViewVector(pPartialTick);
 
-        double range = mc.gameMode.getPickRange();
-        boolean extendedRange = range > 3.0D;
-        if (mc.gameMode.hasFarPickRange()) {
-            range = 6.0D;
-            extendedRange = false;
-        }
+        double blockReach = mc.gameMode.getPickRange();
+        double entityReach = mc.player.getEntityReach();
+        double searchRange = Math.max(blockReach, entityReach);
 
-        double searchRange = range;
         Vec3 endPos = eyePos.add(lookVec.scale(searchRange));
 
         AABB searchAABB = player.getBoundingBox()
@@ -70,12 +66,6 @@ public class GameRendererMixin {
                     bestDistSq = 0.0D;
                     currentHit = new EntityHitResult(entity, eyePos);
                 }
-            }
-        }
-
-        if (extendedRange && currentHit instanceof EntityHitResult ehr) {
-            if (ehr.getLocation().distanceToSqr(eyePos) > 9.0D) {
-                return;
             }
         }
 
