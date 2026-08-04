@@ -51,10 +51,10 @@ public abstract class PathNavigationMixin {
         Vec3 vec3 = this.getTempMobPos();
         this.maxDistanceToWaypoint = this.mob.getBbWidth() > 0.75F ? this.mob.getBbWidth() / 2.0F : 0.75F - this.mob.getBbWidth() / 2.0F;
         Vec3i vec3i = this.path.getNextNodePos();
-        double d0 = Math.abs(this.mob.getX() - ((double)vec3i.getX() + (this.mob.getBbWidth() + 1) / 2D));
-        double d2 = Math.abs(this.mob.getZ() - ((double)vec3i.getZ() + (this.mob.getBbWidth() + 1) / 2D));
+        double d0 = Math.abs(this.mob.getX() - ((double)vec3i.getX() + ((int)(this.mob.getBbWidth() + 1)) / 2D));
+        double d2 = Math.abs(this.mob.getZ() - ((double)vec3i.getZ() + ((int)(this.mob.getBbWidth() + 1)) / 2D));
         double d1;
-        if (this.mob instanceof ICustomMultipart mp && !mp.isMainHitboxCollision()) {
+        if (this.mob instanceof ICustomMultipart mp) {
             double partMinY = hitboxlib$getLowestCollisionMinY(this.mob);
             double effectiveY = partMinY != Double.MAX_VALUE ? partMinY : this.mob.getY();
             d1 = Math.abs(effectiveY - (double)vec3i.getY());
@@ -73,16 +73,21 @@ public abstract class PathNavigationMixin {
     @Unique
     private static double hitboxlib$getLowestCollisionMinY(Mob entity) {
         PartEntity<?>[] parts = entity.getParts();
-        if (parts == null) {
-            return Double.MAX_VALUE;
-        }
         double lowest = Double.MAX_VALUE;
-        for (PartEntity<?> part : parts) {
-            if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                double minY = cp.getBoundingBox().minY;
-                if (minY < lowest) {
-                    lowest = minY;
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
+                    double minY = cp.getBoundingBox().minY;
+                    if (minY < lowest) {
+                        lowest = minY;
+                    }
                 }
+            }
+        }
+        if (entity instanceof ICustomMultipart mp && mp.isMainHitboxCollision()) {
+            double mainMinY = entity.getY();
+            if (mainMinY < lowest) {
+                lowest = mainMinY;
             }
         }
         return lowest;

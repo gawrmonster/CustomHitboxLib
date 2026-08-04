@@ -162,10 +162,9 @@ public abstract class EntityMixin {
     private void hitboxlib$checkInsideBlocks(CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (self.noPhysics) {
-            ci.cancel();
             return;
         }
-        if (!(self instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(self instanceof ICustomMultipart mp)) {
             return;
         }
 
@@ -194,25 +193,25 @@ public abstract class EntityMixin {
                         BlockState state = level.getBlockState(mutPos);
                         state.entityInside(level, mutPos, self);
                         onInsideBlock(state);
+                        ci.cancel();
+                        return;
                     }
                 }
             }
         }
 
-        ci.cancel();
+        if (!mp.isMainHitboxCollision()) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "isInWall()Z", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$isInWall(CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity) (Object) this;
         if (self.noPhysics) {
-            cir.setReturnValue(false);
             return;
         }
         if (!(self instanceof ICustomMultipart mp)) {
-            return;
-        }
-        if (mp.isMainHitboxCollision()) {
             return;
         }
 
@@ -224,8 +223,10 @@ public abstract class EntityMixin {
                     return;
                 }
             }
-            cir.setReturnValue(false);
         }
 
+        if (!mp.isMainHitboxCollision()) {
+            cir.setReturnValue(false);
+        }
     }
 }

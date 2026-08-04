@@ -24,7 +24,7 @@ public abstract class GroundPathNavigationMixin extends net.minecraft.world.enti
         cancellable = true
     )
     private void hitboxlib$useLowestCollisionMinYForSurfaceY(CallbackInfoReturnable<Integer> cir) {
-        if (this.mob instanceof ICustomMultipart mp && !mp.isMainHitboxCollision()) {
+        if (this.mob instanceof ICustomMultipart mp) {
             double partMinY = hitboxlib$getLowestCollisionMinY();
             if (partMinY != Double.MAX_VALUE) {
                 int blockY = (int) Math.floor(partMinY);
@@ -51,16 +51,21 @@ public abstract class GroundPathNavigationMixin extends net.minecraft.world.enti
 
     private double hitboxlib$getLowestCollisionMinY() {
         PartEntity<?>[] parts = this.mob.getParts();
-        if (parts == null) {
-            return Double.MAX_VALUE;
-        }
         double lowest = Double.MAX_VALUE;
-        for (PartEntity<?> part : parts) {
-            if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                double minY = cp.getBoundingBox().minY;
-                if (minY < lowest) {
-                    lowest = minY;
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
+                    double minY = cp.getBoundingBox().minY;
+                    if (minY < lowest) {
+                        lowest = minY;
+                    }
                 }
+            }
+        }
+        if (this.mob instanceof ICustomMultipart mp && mp.isMainHitboxCollision()) {
+            double mainMinY = this.mob.getY();
+            if (mainMinY < lowest) {
+                lowest = mainMinY;
             }
         }
         return lowest;

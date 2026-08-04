@@ -56,7 +56,7 @@ public abstract class MoveControlMixin {
         cancellable = true
     )
     private void hitboxlib$tick(CallbackInfo ci) {
-        if (!(this.mob instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(this.mob instanceof ICustomMultipart mp)) {
             return;
         }
 
@@ -127,7 +127,7 @@ public abstract class MoveControlMixin {
             BlockPos blockpos = this.mob.blockPosition();
             BlockState blockstate = this.mob.level().getBlockState(blockpos);
             VoxelShape voxelshape = blockstate.getCollisionShape(this.mob.level(), blockpos);
-            if (d2 > this.mob.getAttributeValue(Attributes.STEP_HEIGHT) && closestDistSq < (double)Math.max(1.0F, closestPartWidth)
+            if (d2 > this.mob.maxUpStep() && closestDistSq < (double)Math.max(1.0F, closestPartWidth)
                     || !voxelshape.isEmpty() && mobY < voxelshape.max(Direction.Axis.Y) + (double)blockpos.getY()
                     && !blockstate.is(BlockTags.DOORS) && !blockstate.is(BlockTags.FENCES)) {
                 this.mob.getJumpControl().jump();
@@ -196,16 +196,21 @@ public abstract class MoveControlMixin {
     @Unique
     private double hitboxlib$getLowestCollisionMinY() {
         PartEntity<?>[] parts = this.mob.getParts();
-        if (parts == null) {
-            return Double.MAX_VALUE;
-        }
         double lowest = Double.MAX_VALUE;
-        for (PartEntity<?> part : parts) {
-            if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                double minY = cp.getBoundingBox().minY;
-                if (minY < lowest) {
-                    lowest = minY;
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
+                    double minY = cp.getBoundingBox().minY;
+                    if (minY < lowest) {
+                        lowest = minY;
+                    }
                 }
+            }
+        }
+        if (this.mob instanceof ICustomMultipart mp && mp.isMainHitboxCollision()) {
+            double mainMinY = this.mob.getY();
+            if (mainMinY < lowest) {
+                lowest = mainMinY;
             }
         }
         return lowest;

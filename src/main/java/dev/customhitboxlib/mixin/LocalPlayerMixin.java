@@ -34,17 +34,18 @@ public abstract class LocalPlayerMixin {
         }
 
         PartEntity<?>[] parts = self.getParts();
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision()) continue;
 
-        for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision()) continue;
+                AABB blockAabb = new AABB(
+                    (double) pos.getX(), (double) pos.getY(), (double) pos.getZ(),
+                    (double) pos.getX() + 1.0D, (double) pos.getY() + 1.0D, (double) pos.getZ() + 1.0D
+                ).deflate(1.0E-7D);
 
-            AABB blockAabb = new AABB(
-                (double) pos.getX(), (double) pos.getY(), (double) pos.getZ(),
-                (double) pos.getX() + 1.0D, (double) pos.getY() + 1.0D, (double) pos.getZ() + 1.0D
-            ).deflate(1.0E-7D);
-
-            if (self.level().collidesWithSuffocatingBlock(cp, blockAabb)) {
-                return false;
+                if (self.level().collidesWithSuffocatingBlock(cp, blockAabb)) {
+                    return false;
+                }
             }
         }
         if(!mp.isMainHitboxCollision()) {
