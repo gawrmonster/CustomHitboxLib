@@ -5,9 +5,7 @@ import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -109,6 +107,47 @@ public abstract class EntityMixin {
                     AABB partBlockArea = partBox.expandTowards(result);
                     List<VoxelShape> partBlockShapes = new ArrayList<>();
                     level.getBlockCollisions(entity, partBlockArea).forEach(partBlockShapes::add);
+                    if (!partBlockShapes.isEmpty()) {
+                        result = collideWithShapes(result, partBox, partBlockShapes);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    @Redirect(
+        method = "collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;", 
+        at = @At(
+            value = "INVOKE", 
+            target = "Lnet/minecraft/world/entity/Entity;collideWithShapes(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/List;)Lnet/minecraft/world/phys/Vec3;",
+            ordinal = 0
+        )
+    )
+    private Vec3 hitboxlib$collideWithShapesStepUp(Vec3 movement, AABB aabb, List<VoxelShape> shapes) {
+        Entity self = (Entity) (Object) this;
+
+        if (!(self instanceof LivingEntity) || !(self instanceof ICustomMultipart mp)) {
+            return collideWithShapes(movement, aabb, shapes);
+        }
+
+        Vec3 result = movement;
+
+        // 1. Only collide main hitbox with shapes if main hitbox collision is enabled
+        if (mp.isMainHitboxCollision()) {
+            result = collideWithShapes(movement, aabb, shapes);
+        }
+
+        // 2. Custom parts block collision
+        PartEntity<?>[] ownParts = self.getParts();
+        if (ownParts != null && !self.noPhysics) {
+            for (PartEntity<?> part : ownParts) {
+                if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
+                    AABB partBox = cp.getBoundingBox();
+                    AABB partBlockArea = partBox.expandTowards(result);
+                    List<VoxelShape> partBlockShapes = new ArrayList<>();
+                    self.level().getBlockCollisions(self, partBlockArea).forEach(partBlockShapes::add);
                     if (!partBlockShapes.isEmpty()) {
                         result = collideWithShapes(result, partBox, partBlockShapes);
                     }

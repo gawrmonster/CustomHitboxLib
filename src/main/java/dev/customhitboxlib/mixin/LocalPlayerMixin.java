@@ -25,7 +25,7 @@ public abstract class LocalPlayerMixin {
         )
     )
     private boolean hitboxlib$skipPushWhenPartInsideBlock(LocalPlayer self, BlockPos pos) {
-        if (!(self instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(self instanceof ICustomMultipart mp)) {
             return this.suffocatesAt(pos);
         }
 
@@ -34,7 +34,6 @@ public abstract class LocalPlayerMixin {
         }
 
         PartEntity<?>[] parts = self.getParts();
-        if (parts == null) return false;
 
         for (PartEntity<?> part : parts) {
             if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision()) continue;
@@ -47,6 +46,9 @@ public abstract class LocalPlayerMixin {
             if (self.level().collidesWithSuffocatingBlock(cp, blockAabb)) {
                 return false;
             }
+        }
+        if(!mp.isMainHitboxCollision()) {
+            return false;
         }
 
         return this.suffocatesAt(pos);
