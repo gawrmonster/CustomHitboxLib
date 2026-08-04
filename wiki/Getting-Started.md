@@ -7,8 +7,10 @@
 If you're developing a mod that uses CustomHitboxLib:
 
 1. Download the JAR from Modrinth or CurseForge
-2. Place it in your `mods/` folder alongside Forge 1.20.1
+2. Place it in your `mods/` folder alongside your mod loader
 3. Add it as a dependency in your `build.gradle`:
+
+#### Forge 1.20.1
 
 ```groovy
 repositories {
@@ -17,6 +19,18 @@ repositories {
 
 dependencies {
     implementation fg.deobf("com.gawrmonster:customhitboxlib:1.0.0")
+}
+```
+
+#### NeoForge 1.21.1
+
+```groovy
+repositories {
+    maven { url = "https://modrinth.com/maven" }
+}
+
+dependencies {
+    implementation "com.gawrmonster:customhitboxlib:2.0.0"
 }
 ```
 
@@ -57,8 +71,8 @@ If only installed on one side, the mod will not function correctly.
 
 ## Dependencies
 
-| Dependency | Required | Version |
+| Dependency | Forge 1.20.1 | NeoForge 1.21.1 |
 |---|---|---|
-| Minecraft | Yes | 1.20.1 |
-| Forge | Yes | 47.4.10+ |
-| Java | Yes | 17+ |
+| Minecraft | 1.20.1 | 1.21.1 |
+| Mod Loader | Forge 47.4.10+ | NeoForge 21.1.77+ |
+| Java | 17+ | 21+ |

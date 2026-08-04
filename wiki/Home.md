@@ -2,7 +2,7 @@
 
 **Break free from the vanilla square.**
 
-CustomHitboxLib is a Forge 1.20.1 library mod that adds full **multipart entity hitbox** support to any living entity. Just like the vanilla Ender Dragon, any entity can now have multiple independent collision parts with their own size, position, and behavior.
+CustomHitboxLib is a library mod that adds full **multipart entity hitbox** support to any living entity. Just like the vanilla Ender Dragon, any entity can now have multiple independent collision parts with their own size, position, and behavior.
 
 ---
 
@@ -48,12 +48,12 @@ CustomHitboxLib is a Forge 1.20.1 library mod that adds full **multipart entity 
 
 ## Requirements
 
-| Dependency | Version |
-|---|---|
-| Minecraft | 1.20.1 |
-| Forge | 47.4.10+ |
-| Java | 17 |
-| Sides | Client + Server (required on both) |
+| Dependency | Forge 1.20.1 | NeoForge 1.21.1 |
+|---|---|---|
+| Minecraft | 1.20.1 | 1.21.1 |
+| Mod Loader | Forge 47.4.10+ | NeoForge 21.1.77+ |
+| Java | 17 | 21 |
+| Sides | Client + Server (required on both) | Client + Server (required on both) |
 
 ---
 

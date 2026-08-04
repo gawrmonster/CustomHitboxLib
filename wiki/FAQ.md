@@ -4,7 +4,7 @@
 
 ### What is CustomHitboxLib?
 
-A Forge 1.20.1 library mod that adds multipart entity hitboxes to any living entity. Think of it like the Ender Dragon's multi-part system, but available for any entity.
+A library mod that adds multipart entity hitboxes to any living entity. Think of it like the Ender Dragon's multi-part system, but available for any entity.
 
 ### Does it work on servers?
 
@@ -12,7 +12,7 @@ Yes. It must be installed on **both client and server**. The server handles coll
 
 ### What Minecraft versions are supported?
 
-Currently **1.20.1** only. Other versions may be added in the future.
+**Forge 1.20.1** and **NeoForge 1.21.1**. Other versions may be added in the future.
 
 ### Is it compatible with other mods?
 
@@ -36,7 +36,7 @@ In your world's `datapacks/` folder. On a server, this is usually `world/datapac
 
 ### How do I update parts after editing my datapack?
 
-Run `/reload` in-game. Parts update on all entities immediately.
+Run `/reload` in-game. Note: `/reload` updates the datapack configuration, but existing entities may not reflect changes until they are reloaded (rejoin the world). New entities spawned after `/reload` will use the updated configuration.
 
 ### Can I apply parts to specific entities only?
 
