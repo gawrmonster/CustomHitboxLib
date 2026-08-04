@@ -101,8 +101,6 @@ public abstract class LivingEntityRotationMixin {
     private static boolean hitboxlib$shouldCheck(Entity self) {
         if (!(self instanceof ICustomMultipart mp))
             return false;
-        if (mp.isMainHitboxCollision())
-            return false;
         PartEntity<?>[] parts = mp.getCustomParts();
         return parts != null && parts.length > 0;
     }

@@ -30,7 +30,7 @@ public abstract class BlockItemMixin {
     @Inject(method = "canPlace", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$checkPartsInsteadOfMainHitbox(BlockPlaceContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
         Player player = context.getPlayer();
-        if (!(player instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(player instanceof ICustomMultipart mp)) {
             return;
         }
 
@@ -71,6 +71,8 @@ public abstract class BlockItemMixin {
             }
         }
 
-        cir.setReturnValue(true);
+        if (!mp.isMainHitboxCollision()) {
+            cir.setReturnValue(true);
+        }
     }
 }

@@ -142,57 +142,55 @@ public abstract class EntityMixin {
     private void hitboxlib$checkInsideBlocks(CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (self.noPhysics) {
-            ci.cancel();
             return;
         }
-        if (!(self instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(self instanceof ICustomMultipart mp)) {
             return;
         }
 
         Level level = self.level();
         PartEntity<?>[] parts = self.getParts();
-        if (parts == null)
-            return;
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
+                    continue;
 
-        for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
-                continue;
+                AABB partBox = cp.getBoundingBox();
+                int minX = (int) Math.floor(partBox.minX);
+                int minY = (int) Math.floor(partBox.minY);
+                int minZ = (int) Math.floor(partBox.minZ);
+                int maxX = (int) Math.floor(partBox.maxX);
+                int maxY = (int) Math.floor(partBox.maxY);
+                int maxZ = (int) Math.floor(partBox.maxZ);
 
-            AABB partBox = cp.getBoundingBox();
-            int minX = (int) Math.floor(partBox.minX);
-            int minY = (int) Math.floor(partBox.minY);
-            int minZ = (int) Math.floor(partBox.minZ);
-            int maxX = (int) Math.floor(partBox.maxX);
-            int maxY = (int) Math.floor(partBox.maxY);
-            int maxZ = (int) Math.floor(partBox.maxZ);
-
-            BlockPos.MutableBlockPos mutPos = new BlockPos.MutableBlockPos();
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = minY; y <= maxY; y++) {
-                    for (int z = minZ; z <= maxZ; z++) {
-                        mutPos.set(x, y, z);
-                        BlockState state = level.getBlockState(mutPos);
-                        state.entityInside(level, mutPos, self);
-                        onInsideBlock(state);
+                BlockPos.MutableBlockPos mutPos = new BlockPos.MutableBlockPos();
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            mutPos.set(x, y, z);
+                            BlockState state = level.getBlockState(mutPos);
+                            state.entityInside(level, mutPos, self);
+                            onInsideBlock(state);
+                            ci.cancel();
+                            return;
+                        }
                     }
                 }
             }
         }
 
-        ci.cancel();
+        if (!mp.isMainHitboxCollision()) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "isInWall()Z", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$isInWall(CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity) (Object) this;
         if (self.noPhysics) {
-            cir.setReturnValue(false);
             return;
         }
         if (!(self instanceof ICustomMultipart mp)) {
-            return;
-        }
-        if (mp.isMainHitboxCollision()) {
             return;
         }
 
@@ -204,8 +202,10 @@ public abstract class EntityMixin {
                     return;
                 }
             }
-            cir.setReturnValue(false);
         }
 
+        if (!mp.isMainHitboxCollision()) {
+            cir.setReturnValue(false);
+        }
     }
 }

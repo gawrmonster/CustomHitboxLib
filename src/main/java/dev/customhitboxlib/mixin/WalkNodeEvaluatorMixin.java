@@ -27,16 +27,21 @@ public abstract class WalkNodeEvaluatorMixin extends net.minecraft.world.level.p
     private double hitboxlib$getLowestCollisionMinY() {
         Mob entity = this.mob;
         PartEntity<?>[] parts = entity.getParts();
-        if (parts == null) {
-            return entity.getY();
-        }
         double lowest = Double.MAX_VALUE;
-        for (PartEntity<?> part : parts) {
-            if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                double minY = cp.getBoundingBox().minY;
-                if (minY < lowest) {
-                    lowest = minY;
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
+                    double minY = cp.getBoundingBox().minY;
+                    if (minY < lowest) {
+                        lowest = minY;
+                    }
                 }
+            }
+        }
+        if (entity instanceof ICustomMultipart mp && mp.isMainHitboxCollision()) {
+            double mainMinY = entity.getY();
+            if (mainMinY < lowest) {
+                lowest = mainMinY;
             }
         }
         return lowest == Double.MAX_VALUE ? entity.getY() : lowest;
@@ -49,7 +54,7 @@ public abstract class WalkNodeEvaluatorMixin extends net.minecraft.world.level.p
     )
     private void hitboxlib$useLowestCollisionMinYForStart(CallbackInfoReturnable<Node> cir) {
         Mob entity = this.mob;
-        if (!(entity instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(entity instanceof ICustomMultipart mp)) {
             return;
         }
 

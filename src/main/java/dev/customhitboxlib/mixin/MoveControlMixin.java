@@ -56,7 +56,7 @@ public abstract class MoveControlMixin {
         cancellable = true
     )
     private void hitboxlib$tick(CallbackInfo ci) {
-        if (!(this.mob instanceof ICustomMultipart mp) || mp.isMainHitboxCollision()) {
+        if (!(this.mob instanceof ICustomMultipart mp)) {
             return;
         }
 
@@ -95,12 +95,7 @@ public abstract class MoveControlMixin {
             double d1 = this.wantedZ - this.mob.getZ();
 
             double partMinY = hitboxlib$getLowestCollisionMinY();
-            double mobY;
-            if (mp.isMainHitboxCollision()) {
-                mobY = partMinY != Double.MAX_VALUE ? Math.min(partMinY, this.mob.getY()) : this.mob.getY();
-            } else {
-                mobY = partMinY != Double.MAX_VALUE ? partMinY : this.mob.getY();
-            }
+            double mobY = partMinY != Double.MAX_VALUE ? partMinY : this.mob.getY();
 
             double adjustedWantedY = this.wantedY;
             double moveY = this.wantedY - mobY;
@@ -196,16 +191,21 @@ public abstract class MoveControlMixin {
     @Unique
     private double hitboxlib$getLowestCollisionMinY() {
         PartEntity<?>[] parts = this.mob.getParts();
-        if (parts == null) {
-            return Double.MAX_VALUE;
-        }
         double lowest = Double.MAX_VALUE;
-        for (PartEntity<?> part : parts) {
-            if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                double minY = cp.getBoundingBox().minY;
-                if (minY < lowest) {
-                    lowest = minY;
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
+                    double minY = cp.getBoundingBox().minY;
+                    if (minY < lowest) {
+                        lowest = minY;
+                    }
                 }
+            }
+        }
+        if (this.mob instanceof ICustomMultipart mp && mp.isMainHitboxCollision()) {
+            double mainMinY = this.mob.getY();
+            if (mainMinY < lowest) {
+                lowest = mainMinY;
             }
         }
         return lowest;
