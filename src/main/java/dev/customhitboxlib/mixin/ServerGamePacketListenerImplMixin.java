@@ -28,24 +28,6 @@ public abstract class ServerGamePacketListenerImplMixin {
     private boolean hitboxlib$skipBlockValidation(ServerGamePacketListenerImpl listener, LevelReader level, AABB oldBB, double x, double y, double z) {
         ServerPlayer player = ((ServerGamePacketListenerImpl) (Object) this).getPlayer();
         if (player instanceof ICustomMultipart mp) {
-            PartEntity<?>[] parts = player.getParts();
-            if (parts != null) {
-                double dx = x - player.getX();
-                double dy = y - player.getY();
-                double dz = z - player.getZ();
-                for (PartEntity<?> part : parts) {
-                    if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                        AABB currentPartBox = cp.getBoundingBox();
-                        AABB targetPartBox = currentPartBox.move(dx, dy, dz);
-                        VoxelShape currentPartShape = Shapes.create(currentPartBox.deflate(1.0E-5F));
-                        for (VoxelShape shape : level.getCollisions(player, targetPartBox.deflate(1.0E-5F))) {
-                            if (!Shapes.joinIsNotEmpty(shape, currentPartShape, BooleanOp.AND)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
             if (mp.isMainHitboxCollision()) {
                 return this.isPlayerCollidingWithAnythingNew(level, oldBB, x, y, z);
             }
