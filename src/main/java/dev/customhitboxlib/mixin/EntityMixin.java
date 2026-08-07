@@ -218,7 +218,16 @@ public abstract class EntityMixin {
         PartEntity<?>[] parts = self.getParts();
         if (parts != null) {
             for (PartEntity<?> part : parts) {
-                if (part instanceof CustomEntityPart cp && cp.isSuffocate() && cp.isInWall()) {
+                if (!(part instanceof CustomEntityPart cp) || !cp.isSuffocate()) continue;
+
+                Vec3 pos = cp.position();
+                float halfWidth = cp.getBbWidth() * 0.5F;
+                AABB partAabb = new AABB(
+                    pos.x - halfWidth, pos.y, pos.z - halfWidth,
+                    pos.x + halfWidth, pos.y + cp.getBbHeight(), pos.z + halfWidth
+                );
+
+                if (self.level().collidesWithSuffocatingBlock(cp, partAabb)) {
                     cir.setReturnValue(true);
                     return;
                 }

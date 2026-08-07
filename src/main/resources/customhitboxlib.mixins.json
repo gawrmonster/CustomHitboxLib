@@ -24,6 +24,7 @@
   "client": [
     "GameRendererMixin",
     "MixinEntityRenderDispatcher",
-    "LocalPlayerMixin"
+    "LocalPlayerMixin",
+    "ScreenEffectRendererMixin"
   ]
 }
