@@ -70,13 +70,6 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         return hitboxlib$partArray != null && hitboxlib$partArray.length > 0;
     }
 
-    @Inject(method = "isPickable", at = @At("HEAD"), cancellable = true)
-    private void hitboxlib$isPickable(CallbackInfoReturnable<Boolean> cir) {
-        if (!hitboxlib$mainHitboxPickable && hitboxlib$partArray != null && hitboxlib$partArray.length > 0) {
-            cir.setReturnValue(false);
-        }
-    }
-
     @Inject(method = "isPushable", at = @At("HEAD"), cancellable = true)
     private void hitboxlib$isPushable(CallbackInfoReturnable<Boolean> cir) {
         if (!hitboxlib$mainHitboxPushable) {

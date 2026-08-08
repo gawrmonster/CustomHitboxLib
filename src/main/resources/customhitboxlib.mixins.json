@@ -17,11 +17,12 @@
     "MoveControlMixin",
     "PathNavigationMixin",
     "GroundPathNavigationMixin",
+    "LevelMixin",
+    "ProjectileUtilMixin",
     "ServerGamePacketListenerImplMixin",
     "WalkNodeEvaluatorMixin"
   ],
   "client": [
-    "GameRendererMixin",
     "MixinEntityRenderDispatcher",
     "LocalPlayerMixin",
     "ScreenEffectRendererMixin"
