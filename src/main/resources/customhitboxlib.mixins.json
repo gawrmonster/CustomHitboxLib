@@ -18,6 +18,7 @@
     "PathNavigationMixin",
     "PlayerMixin",
     "GroundPathNavigationMixin",
+    "LevelMixin",
     "ProjectileUtilMixin",
     "ServerGamePacketListenerImplMixin",
     "WalkNodeEvaluatorMixin"
