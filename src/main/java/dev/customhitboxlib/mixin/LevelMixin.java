@@ -33,6 +33,10 @@ public abstract class LevelMixin {
             List<Entity> nearby = ((Level)(Object)this).getEntities(excluded, inflated, e -> true);
             for (Entity entity : nearby) {
                 if (result.contains(entity)) continue;
+                
+                // CRITICAL FIX: Ensure entity passes caller's predicate before adding
+                if (predicate != null && !predicate.test(entity)) continue;
+
                 if (!(entity instanceof ICustomMultipart mp) || !mp.hasCustomParts()) continue;
 
                 PartEntity<?>[] parts = entity.getParts();
