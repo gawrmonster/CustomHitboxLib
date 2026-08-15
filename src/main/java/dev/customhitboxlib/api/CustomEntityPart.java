@@ -99,7 +99,7 @@ public class CustomEntityPart extends PartEntity<Entity> {
 
     @Override
     public boolean canBeCollidedWith() {
-        return pushable;
+        return getParent().canBeCollidedWith();
     }
 
     @Override
