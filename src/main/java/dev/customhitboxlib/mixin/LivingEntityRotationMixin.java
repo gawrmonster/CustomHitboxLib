@@ -38,6 +38,10 @@ public abstract class LivingEntityRotationMixin {
         if (!hitboxlib$shouldCheck(self))
             return;
 
+        LivingEntity living = (LivingEntity) (Object) this;
+        if(living.noPhysics)
+            return;
+
         boolean wasColliding = hitboxlib$partsCollide(self);
 
         float oldYHeadRot = this.yHeadRot;
@@ -55,6 +59,10 @@ public abstract class LivingEntityRotationMixin {
     private void hitboxlib$preventBodyRenderYawCollision(float yBodyRot, CallbackInfo ci) {
         Entity self = (Entity) (Object) this;
         if (!hitboxlib$shouldCheck(self))
+            return;
+
+        LivingEntity living = (LivingEntity) (Object) this;
+        if(living.noPhysics)
             return;
 
         boolean wasColliding = hitboxlib$partsCollide(self);
@@ -75,6 +83,9 @@ public abstract class LivingEntityRotationMixin {
     private void hitboxlib$preventTickHeadTurnCollision(CallbackInfoReturnable<Boolean> cir) {
         Entity self = (Entity) (Object) this;
         if (!hitboxlib$shouldCheck(self))
+            return;
+
+        if(self.noPhysics)
             return;
 
         if (!hitboxlib$partsCollide(self))

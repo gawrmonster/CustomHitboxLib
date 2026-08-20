@@ -34,6 +34,8 @@ public abstract class MobRotationMixin {
             return;
 
         LivingEntity living = (LivingEntity) (Object) this;
+        if(living.noPhysics)
+            return;
 
         if (!hitboxlib$partsCollide(self)) {
             hitboxlib$prevYBodyRot = living.yBodyRot;
