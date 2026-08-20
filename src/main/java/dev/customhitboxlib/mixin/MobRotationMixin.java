@@ -33,6 +33,7 @@ public abstract class MobRotationMixin {
         if (!hitboxlib$shouldCheck(self))
             return;
 
+        if(self.noPhysics) return;
         LivingEntity living = (LivingEntity) (Object) this;
 
         if (!hitboxlib$partsCollide(self)) {

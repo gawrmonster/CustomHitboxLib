@@ -32,6 +32,7 @@ public abstract class EntityRotationMixin {
         if (self == null || !hitboxlib$shouldCheck(self)) return;
 
         if (!(self instanceof LivingEntity living)) return;
+        if(living.noPhysics) return;
 
         float oldYRot = living.getYRot();
         if (oldYRot == newYRot) return;
@@ -62,6 +63,7 @@ public abstract class EntityRotationMixin {
     private void hitboxlib$preventHeadPitchCollision(float newXRot, CallbackInfo ci) {
         Entity self = (Entity)(Object)this;
         if (!hitboxlib$shouldCheck(self)) return;
+        if(self.noPhysics) return;
 
         float oldXRot = this.xRot;
         if (oldXRot == newXRot) return;

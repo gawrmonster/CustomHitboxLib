@@ -193,8 +193,6 @@ public abstract class EntityMixin {
                         BlockState state = level.getBlockState(mutPos);
                         state.entityInside(level, mutPos, self);
                         onInsideBlock(state);
-                        ci.cancel();
-                        return;
                     }
                 }
             }
