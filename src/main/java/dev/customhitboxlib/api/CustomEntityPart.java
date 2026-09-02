@@ -134,6 +134,15 @@ public class CustomEntityPart extends PartEntity<Entity> {
     }
 
     @Override
+    public double getEyeY() {
+        Entity parent = getParent();
+        if (parent != null) {
+            return parent.getEyeY();
+        }
+        return this.getEyeY();
+    }
+
+    @Override
     public EntityDimensions getDimensions(Pose pose) {
         return size;
     }
