@@ -17,6 +17,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraftforge.entity.PartEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -197,14 +198,13 @@ public abstract class EntityMixin {
             for (PartEntity<?> part : parts) {
                 if (!(part instanceof CustomEntityPart cp) || !cp.isSuffocate()) continue;
 
-                Vec3 pos = cp.position();
-                float halfWidth = cp.getBbWidth() * 0.5F;
-                AABB partAabb = new AABB(
-                    pos.x - halfWidth, pos.y, pos.z - halfWidth,
-                    pos.x + halfWidth, pos.y + cp.getBbHeight(), pos.z + halfWidth
-                );
-
-                if (self.level().collidesWithSuffocatingBlock(cp, partAabb)) {
+                float f = cp.getBbWidth() * 0.8F;
+                Vec3 eyePos = cp.getEyePosition();
+                AABB aabb = AABB.ofSize(eyePos, (double)f, 1.0E-6D, (double)f);
+                if (BlockPos.betweenClosedStream(aabb).anyMatch((p_201942_) -> {
+                    BlockState blockstate = self.level().getBlockState(p_201942_);
+                    return !blockstate.isAir() && blockstate.isSuffocating(self.level(), p_201942_) && Shapes.joinIsNotEmpty(blockstate.getCollisionShape(self.level(), p_201942_).move((double)p_201942_.getX(), (double)p_201942_.getY(), (double)p_201942_.getZ()), Shapes.create(aabb), BooleanOp.AND);
+                })) {
                     cir.setReturnValue(true);
                     return;
                 }

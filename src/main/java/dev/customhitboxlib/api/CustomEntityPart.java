@@ -139,6 +139,15 @@ public class CustomEntityPart extends PartEntity<Entity> {
     }
 
     @Override
+    protected float getEyeHeight(Pose pose, EntityDimensions dimensions) {
+        Entity parent = getParent();
+        if (parent != null) {
+            return (float) (parent.getEyeY() - this.getY());
+        }
+        return dimensions.height * 0.85F;
+    }
+
+    @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return null;
     }
