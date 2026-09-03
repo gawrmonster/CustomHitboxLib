@@ -12,7 +12,7 @@ import net.minecraftforge.entity.PartEntity;
 
 public class CustomEntityPart extends PartEntity<Entity> {
     private final EntityDimensions size;
-    private final boolean pickable;
+    private boolean pickable;
     private boolean pushable;
     private boolean hasCollision;
     private boolean isSuffocate;
@@ -26,6 +26,13 @@ public class CustomEntityPart extends PartEntity<Entity> {
             setCustomName(net.minecraft.network.chat.Component.literal(name));
         }
         this.refreshDimensions();
+    }
+
+    public CustomEntityPart(Entity parent, String name, EntityDimensions size, boolean pickable, boolean pushable, boolean hasCollision, boolean isSuffocate) {
+        this(parent, name, size, pickable);
+        this.pushable = pushable;
+        this.hasCollision = hasCollision;
+        this.isSuffocate = isSuffocate;
     }
 
     public CustomEntityPart(Entity parent, String name, EntityDimensions size) {
@@ -75,6 +82,10 @@ public class CustomEntityPart extends PartEntity<Entity> {
     @Override
     public boolean isPushable() {
         return pushable;
+    }
+
+    public void setPickable(boolean pickable) {
+        this.pickable = pickable;
     }
 
     public void setPushable(boolean pushable) {

@@ -60,14 +60,17 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         if (hitboxlib$partArray != null && hitboxlib$partArray.length > 0) {
             return hitboxlib$partArray;
         }
-        return null;
+        return super.getParts();
     }
 
     @Override
     public boolean isMultipartEntity() {
         if (HitboxLibRenderState.suppressMultipart)
             return false;
-        return hitboxlib$partArray != null && hitboxlib$partArray.length > 0;
+        if(hasCustomParts()) {
+            return hitboxlib$partArray != null && hitboxlib$partArray.length > 0;
+        }
+        return super.isMultipartEntity();
     }
 
     @Inject(method = "isPushable", at = @At("HEAD"), cancellable = true)
@@ -101,7 +104,13 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Override
     public PartEntity<?>[] getCustomParts() {
-        return getParts();
+        if (!hitboxlib$initialized) {
+            hitboxlib$initialize();
+        }
+        if (hasCustomParts() && (hitboxlib$partArray == null || hitboxlib$partArray.length == 0)) {
+            hitboxlib$partArray = hitboxlib$instances.values().toArray(new PartEntity<?>[0]);
+        }
+        return hitboxlib$partArray;
     }
 
     @Override
@@ -155,9 +164,6 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
             part.yo = part.getY();
             part.zo = part.getZ();
             part.setPos(pos.x, pos.y, pos.z);
-            part.setPushable(def.pushable());
-            part.setHasCollision(def.collision());
-            part.setSuffocate(def.suffocate());
         }
 
         hitboxlib$partArray = hitboxlib$instances.values().toArray(new PartEntity<?>[0]);
@@ -168,8 +174,13 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         for (Map.Entry<String, PartDefinition> entry : hitboxlib$definitions.entrySet()) {
             if (!hitboxlib$instances.containsKey(entry.getKey())) {
                 PartDefinition def = entry.getValue();
-                CustomEntityPart part = new CustomEntityPart(self, entry.getKey(), def.dimensions(), def.pickable());
+                CustomEntityPart part = new CustomEntityPart(self, entry.getKey(), def.dimensions(), def.pickable(), def.pushable(), def.collision(), def.suffocate());
                 part.setPositioner(def.positioner());
+                Vec3 pos = def.positioner().getPosition(self, 1.0F);
+                part.xo = part.getX();
+                part.yo = part.getY();
+                part.zo = part.getZ();
+                part.setPos(pos.x, pos.y, pos.z);
                 hitboxlib$instances.put(entry.getKey(), part);
             }
         }
@@ -184,7 +195,7 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
         Level level = self.level();
         AABB selfAabb = self.getBoundingBox();
-        PartEntity<?>[] selfParts = self.getParts();
+        PartEntity<?>[] selfParts = ((ICustomMultipart)self).getCustomParts();
 
         Set<Entity> pushedEntities = Collections.newSetFromMap(new IdentityHashMap<>());
         List<CustomEntityPart> selfPushableParts = new ArrayList<>();
@@ -215,7 +226,7 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
                 }
             }
             if (other instanceof ICustomMultipart otherMp && otherMp.hasCustomParts()) {
-                PartEntity<?>[] otherParts = other.getParts();
+                PartEntity<?>[] otherParts = otherMp.getCustomParts();
                 if (otherParts != null) {
                     for (PartEntity<?> op : otherParts) {
                         Entity owner = ((PartEntity<?>) op).getParent();
@@ -235,7 +246,7 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
                     AABB partBox = selfPart.getBoundingBox();
 
                     if (other instanceof ICustomMultipart otherMp && otherMp.hasCustomParts()) {
-                        PartEntity<?>[] otherParts = other.getParts();
+                        PartEntity<?>[] otherParts = otherMp.getCustomParts();
                         if (otherParts != null) {
                             for (PartEntity<?> otherPart : otherParts) {
                                 if (!(otherPart instanceof CustomEntityPart otherCp) || !otherCp.isPushable())

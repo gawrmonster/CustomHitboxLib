@@ -48,7 +48,7 @@ public class ProjectileUtilMixin {
             }
 
             if (!isMultipart) continue;
-            PartEntity<?>[] parts = entity.getParts();
+            PartEntity<?>[] parts = ((ICustomMultipart)entity).getCustomParts();
             if (parts == null) continue;
 
             for (PartEntity<?> part : parts) {
@@ -96,7 +96,7 @@ public class ProjectileUtilMixin {
             }
 
             if (!isMultipart) continue;
-            PartEntity<?>[] parts = entity.getParts();
+            PartEntity<?>[] parts = ((ICustomMultipart)entity).getCustomParts();
             if (parts == null) continue;
 
             for (PartEntity<?> part : parts) {

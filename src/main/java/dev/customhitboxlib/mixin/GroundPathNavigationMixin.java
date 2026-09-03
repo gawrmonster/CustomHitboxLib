@@ -50,7 +50,7 @@ public abstract class GroundPathNavigationMixin extends net.minecraft.world.enti
     }
 
     private double hitboxlib$getLowestCollisionMinY() {
-        PartEntity<?>[] parts = this.mob.getParts();
+        PartEntity<?>[] parts = ((ICustomMultipart)this.mob).getCustomParts();
         double lowest = Double.MAX_VALUE;
         if (parts != null) {
             for (PartEntity<?> part : parts) {

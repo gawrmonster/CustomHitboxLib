@@ -72,7 +72,7 @@ public abstract class PathNavigationMixin {
 
     @Unique
     private static double hitboxlib$getLowestCollisionMinY(Mob entity) {
-        PartEntity<?>[] parts = entity.getParts();
+        PartEntity<?>[] parts = ((ICustomMultipart)entity).getCustomParts();
         double lowest = Double.MAX_VALUE;
         if (parts != null) {
             for (PartEntity<?> part : parts) {
