@@ -51,8 +51,9 @@ public abstract class MixinEntityRenderDispatcher {
         float pAlpha,
         CallbackInfo ci
     ) {
-        PartEntity<?>[] parts = pEntity.getParts();
         HitboxLibRenderState.suppressMultipart = false;
+        if (!(pEntity instanceof ICustomMultipart mp)) return;
+        PartEntity<?>[] parts = mp.getCustomParts();
         if (parts == null) return;
 
         double entityX = pEntity.xo + (pEntity.getX() - pEntity.xo) * pRed;

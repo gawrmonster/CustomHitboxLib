@@ -55,62 +55,95 @@ public abstract class EntityMixin {
             return Entity.collideBoundingBox(entity, movement, aabb, level, entityShapes);
         }
 
-        ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList
-                .builderWithExpectedSize(entityShapes.size() + 10);
-        entityShapeBuilder.addAll(entityShapes);
+        PartEntity<?>[] ownParts = mp.getCustomParts();
+        Vec3 result = movement;
 
-        PartEntity<?>[] ownParts = self.getParts();
+        if (mp.isMainHitboxCollision() && !self.noPhysics) {
+            ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList
+                    .builderWithExpectedSize(entityShapes.size() + 10);
+            entityShapeBuilder.addAll(entityShapes);
 
-        AABB searchBox = self.getBoundingBox().inflate(1.0E-7D);
-        List<Entity> nearbyEntities = level.getEntities(self, searchBox);
+            AABB searchBox = self.getBoundingBox().inflate(1.0E-7D);
+            List<Entity> nearbyEntities = level.getEntities(self, searchBox);
 
-        for (Entity e : nearbyEntities) {
-            if (e == self)
-                continue;
-            if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts())
-                continue;
-
-            PartEntity<?>[] parts = e.getParts();
-            if (parts == null)
-                continue;
-
-            for (PartEntity<?> part : parts) {
-                if (!(part instanceof CustomEntityPart cp))
+            for (Entity e : nearbyEntities) {
+                if (e == self)
                     continue;
-                if (cp.isPushable())
+                if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts())
                     continue;
 
-                entityShapeBuilder.add(Shapes.create(cp.getBoundingBox()));
+                PartEntity<?>[] parts = otherMp.getCustomParts();
+                if (parts == null)
+                    continue;
+
+                for (PartEntity<?> part : parts) {
+                    if (!(part instanceof CustomEntityPart cp))
+                        continue;
+                    if (!e.canCollideWith(self))
+                        continue;
+                    if (!cp.hasCollision())
+                        continue;
+
+                    entityShapeBuilder.add(Shapes.create(cp.getBoundingBox()));
+                }
             }
-        }
 
-        WorldBorder worldborder = level.getWorldBorder();
-        boolean inBorder = entity != null && worldborder.isInsideCloseToBorder(entity, aabb.expandTowards(movement));
-        if (inBorder) {
-            entityShapeBuilder.add(worldborder.getCollisionShape());
-        }
-
-        Vec3 result = collideWithShapes(movement, aabb, entityShapeBuilder.build());
-
-        if (mp.isMainHitboxCollision()) {
-            AABB blockArea = aabb.expandTowards(result);
-            List<VoxelShape> mainBlockShapes = new ArrayList<>();
-            level.getBlockCollisions(entity, blockArea).forEach(mainBlockShapes::add);
-            if (!mainBlockShapes.isEmpty()) {
-                result = collideWithShapes(result, aabb, mainBlockShapes);
+            WorldBorder worldborder = level.getWorldBorder();
+            boolean inBorder = entity != null && worldborder.isInsideCloseToBorder(entity, aabb.expandTowards(movement));
+            if (inBorder) {
+                entityShapeBuilder.add(worldborder.getCollisionShape());
             }
+
+            AABB blockArea = aabb.expandTowards(movement);
+            level.getBlockCollisions(entity, blockArea).forEach(entityShapeBuilder::add);
+
+            result = collideWithShapes(movement, aabb, entityShapeBuilder.build());
         }
 
         if (ownParts != null && !self.noPhysics) {
             for (PartEntity<?> part : ownParts) {
                 if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
                     AABB partBox = cp.getBoundingBox();
-                    AABB partBlockArea = partBox.expandTowards(result);
-                    List<VoxelShape> partBlockShapes = new ArrayList<>();
-                    level.getBlockCollisions(entity, partBlockArea).forEach(partBlockShapes::add);
-                    if (!partBlockShapes.isEmpty()) {
-                        result = collideWithShapes(result, partBox, partBlockShapes);
+
+                    ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList
+                            .builderWithExpectedSize(entityShapes.size() + 10);
+                    entityShapeBuilder.addAll(level.getEntityCollisions(self, partBox.expandTowards(result)));
+
+                    AABB searchBox = partBox.inflate(1.0E-7D);
+                    List<Entity> nearbyEntities = level.getEntities(self, searchBox);
+
+                    for (Entity e : nearbyEntities) {
+                        if (e == self)
+                            continue;
+                        if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts())
+                            continue;
+
+                        PartEntity<?>[] parts = otherMp.getCustomParts();
+                        if (parts == null)
+                            continue;
+
+                        for (PartEntity<?> otherPart : parts) {
+                            if (!(otherPart instanceof CustomEntityPart otherCp))
+                                continue;
+                            if (!e.canCollideWith(self))
+                                continue;
+                            if (!otherCp.hasCollision())
+                                continue;
+
+                            entityShapeBuilder.add(Shapes.create(otherCp.getBoundingBox()));
+                        }
                     }
+
+                    WorldBorder worldborder = level.getWorldBorder();
+                    boolean inBorder = entity != null && worldborder.isInsideCloseToBorder(entity, partBox.expandTowards(result));
+                    if (inBorder) {
+                        entityShapeBuilder.add(worldborder.getCollisionShape());
+                    }
+
+                    AABB partBlockArea = partBox.expandTowards(result);
+                    level.getBlockCollisions(entity, partBlockArea).forEach(entityShapeBuilder::add);
+
+                    result = collideWithShapes(result, partBox, entityShapeBuilder.build());
                 }
             }
         }
@@ -141,7 +174,7 @@ public abstract class EntityMixin {
         }
 
         // 2. Custom parts block collision
-        PartEntity<?>[] ownParts = self.getParts();
+        PartEntity<?>[] ownParts = mp.getCustomParts();
         if (ownParts != null && !self.noPhysics) {
             for (PartEntity<?> part : ownParts) {
                 if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
@@ -170,30 +203,29 @@ public abstract class EntityMixin {
         }
 
         Level level = self.level();
-        PartEntity<?>[] parts = self.getParts();
-        if (parts == null)
-            return;
+        PartEntity<?>[] parts = mp.getCustomParts();
+        if (parts != null) {
+            for (PartEntity<?> part : parts) {
+                if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
+                    continue;
 
-        for (PartEntity<?> part : parts) {
-            if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
-                continue;
+                AABB partBox = cp.getBoundingBox();
+                int minX = (int) Math.floor(partBox.minX);
+                int minY = (int) Math.floor(partBox.minY);
+                int minZ = (int) Math.floor(partBox.minZ);
+                int maxX = (int) Math.floor(partBox.maxX);
+                int maxY = (int) Math.floor(partBox.maxY);
+                int maxZ = (int) Math.floor(partBox.maxZ);
 
-            AABB partBox = cp.getBoundingBox();
-            int minX = (int) Math.floor(partBox.minX);
-            int minY = (int) Math.floor(partBox.minY);
-            int minZ = (int) Math.floor(partBox.minZ);
-            int maxX = (int) Math.floor(partBox.maxX);
-            int maxY = (int) Math.floor(partBox.maxY);
-            int maxZ = (int) Math.floor(partBox.maxZ);
-
-            BlockPos.MutableBlockPos mutPos = new BlockPos.MutableBlockPos();
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = minY; y <= maxY; y++) {
-                    for (int z = minZ; z <= maxZ; z++) {
-                        mutPos.set(x, y, z);
-                        BlockState state = level.getBlockState(mutPos);
-                        state.entityInside(level, mutPos, self);
-                        onInsideBlock(state);
+                BlockPos.MutableBlockPos mutPos = new BlockPos.MutableBlockPos();
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            mutPos.set(x, y, z);
+                            BlockState state = level.getBlockState(mutPos);
+                            state.entityInside(level, mutPos, self);
+                            onInsideBlock(state);
+                        }
                     }
                 }
             }
@@ -214,7 +246,7 @@ public abstract class EntityMixin {
             return;
         }
 
-        PartEntity<?>[] parts = self.getParts();
+        PartEntity<?>[] parts = mp.getCustomParts();
         if (parts != null) {
             for (PartEntity<?> part : parts) {
                 if (!(part instanceof CustomEntityPart cp) || !cp.isSuffocate()) continue;

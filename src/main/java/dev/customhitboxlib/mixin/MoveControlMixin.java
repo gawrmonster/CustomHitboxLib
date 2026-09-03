@@ -195,7 +195,7 @@ public abstract class MoveControlMixin {
 
     @Unique
     private double hitboxlib$getLowestCollisionMinY() {
-        PartEntity<?>[] parts = this.mob.getParts();
+        PartEntity<?>[] parts = ((ICustomMultipart)this.mob).getCustomParts();
         double lowest = Double.MAX_VALUE;
         if (parts != null) {
             for (PartEntity<?> part : parts) {
@@ -218,7 +218,7 @@ public abstract class MoveControlMixin {
 
     @Unique
     private boolean hitboxlib$partsCollideAtWantedY(double moveY) {
-        PartEntity<?>[] parts = this.mob.getParts();
+        PartEntity<?>[] parts = ((ICustomMultipart)this.mob).getCustomParts();
         if (parts == null) return false;
         double moveX = this.wantedX - this.mob.getX();
         double moveZ = this.wantedZ - this.mob.getZ();
@@ -237,7 +237,7 @@ public abstract class MoveControlMixin {
 
     @Unique
     private double hitboxlib$getClosestPartWidth(double d0, double d1) {
-        PartEntity<?>[] parts = this.mob.getParts();
+        PartEntity<?>[] parts = ((ICustomMultipart)this.mob).getCustomParts();
         double closestPartWidth = this.mob.getBbWidth();
         double closestPartDistSq = d0 * d0 + d1 * d1;
         if (parts != null) {
@@ -258,7 +258,7 @@ public abstract class MoveControlMixin {
 
     @Unique
     private double hitboxlib$getClosestPartDistSq(double d0, double d1) {
-        PartEntity<?>[] parts = this.mob.getParts();
+        PartEntity<?>[] parts = ((ICustomMultipart)this.mob).getCustomParts();
         double closest = d0 * d0 + d1 * d1;
         if (parts != null) {
             for (PartEntity<?> part : parts) {

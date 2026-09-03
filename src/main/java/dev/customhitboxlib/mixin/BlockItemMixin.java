@@ -59,7 +59,7 @@ public abstract class BlockItemMixin {
             }
         }
 
-        PartEntity<?>[] parts = player.getParts();
+        PartEntity<?>[] parts = mp.getCustomParts();
         if (parts != null) {
             for (PartEntity<?> part : parts) {
                 if (part instanceof CustomEntityPart cp && cp.hasCollision()) {

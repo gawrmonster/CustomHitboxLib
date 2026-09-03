@@ -33,7 +33,7 @@ public abstract class LocalPlayerMixin {
             return false;
         }
 
-        PartEntity<?>[] parts = self.getParts();
+        PartEntity<?>[] parts = mp.getCustomParts();
         if (parts != null) {
             for (PartEntity<?> part : parts) {
                 if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision()) continue;

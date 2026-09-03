@@ -39,7 +39,7 @@ public abstract class LevelMixin {
 
                 if (!(entity instanceof ICustomMultipart mp) || !mp.hasCustomParts()) continue;
 
-                PartEntity<?>[] parts = entity.getParts();
+                PartEntity<?>[] parts = mp.getCustomParts();
                 if (parts == null) continue;
 
                 for (PartEntity<?> part : parts) {
