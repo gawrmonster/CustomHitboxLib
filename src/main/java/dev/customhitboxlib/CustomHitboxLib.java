@@ -2,12 +2,15 @@ package dev.customhitboxlib;
 
 import dev.customhitboxlib.api.ICustomMultipart;
 import dev.customhitboxlib.datapack.PartDefinitionLoader;
+import dev.customhitboxlib.network.CustomPartPositionSyncPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +22,15 @@ public class CustomHitboxLib {
 
     public CustomHitboxLib(IEventBus modEventBus) {
         NeoForge.EVENT_BUS.register(this);
+        modEventBus.addListener(this::registerPayloads);
+    }
+
+    private void registerPayloads(RegisterPayloadHandlersEvent event) {
+        event.registrar("1").playToServer(
+                CustomPartPositionSyncPacket.TYPE,
+                CustomPartPositionSyncPacket.STREAM_CODEC,
+                CustomPartPositionSyncPacket::handle
+        );
     }
 
     @SubscribeEvent

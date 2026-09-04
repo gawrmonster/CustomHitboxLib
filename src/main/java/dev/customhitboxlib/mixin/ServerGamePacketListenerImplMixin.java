@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -29,8 +30,38 @@ public abstract class ServerGamePacketListenerImplMixin {
         ServerPlayer player = ((ServerGamePacketListenerImpl) (Object) this).getPlayer();
         if (player instanceof ICustomMultipart mp) {
             if (mp.isMainHitboxCollision()) {
-                return this.isPlayerCollidingWithAnythingNew(level, oldBB, x, y, z);
+                if (this.isPlayerCollidingWithAnythingNew(level, oldBB, x, y, z)) {
+                    return true;
+                }
             }
+
+            PartEntity<?>[] parts = mp.getCustomParts();
+            if (parts != null) {
+                double deltaX = x - player.getX();
+                double deltaY = y - player.getY();
+                double deltaZ = z - player.getZ();
+                java.util.Map<String, Vec3> synced = mp.getSyncedPartPositions();
+
+                for (PartEntity<?> part : parts) {
+                    if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
+                        continue;
+
+                    Vec3 syncedPos = synced.get(cp.getCustomName() != null ? cp.getCustomName().getString() : null);
+                    AABB oldPartBB = syncedPos != null
+                            ? cp.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(syncedPos)
+                            : cp.getBoundingBox();
+
+                    AABB newPartBB = oldPartBB.move(deltaX, deltaY, deltaZ);
+
+                    VoxelShape oldPartShape = Shapes.create(oldPartBB.deflate(1.0E-5F));
+                    for (VoxelShape shape : level.getCollisions(player, newPartBB.deflate(1.0E-5F))) {
+                        if (!Shapes.joinIsNotEmpty(shape, oldPartShape, BooleanOp.AND)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
             return false;
         }
         return this.isPlayerCollidingWithAnythingNew(level, oldBB, x, y, z);

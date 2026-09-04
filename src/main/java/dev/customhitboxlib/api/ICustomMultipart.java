@@ -1,5 +1,6 @@
 package dev.customhitboxlib.api;
 
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,4 +27,6 @@ public interface ICustomMultipart {
     void setMainHitboxCollision(boolean collision);
 
     boolean isMainHitboxCollision();
+
+    java.util.Map<String, Vec3> getSyncedPartPositions();
 }
