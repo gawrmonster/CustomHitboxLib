@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,6 +50,9 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Unique
     private boolean hitboxlib$mainHitboxCollision = true;
+
+    @Unique
+    private final Map<String, Vec3> hitboxlib$syncedPartPositions = new HashMap<>();
 
     private LivingEntityMixin() {
         super(null, null);
@@ -144,6 +148,11 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     }
 
     @Override
+    public Map<String, Vec3> getSyncedPartPositions() {
+        return hitboxlib$syncedPartPositions;
+    }
+
+    @Override
     public void tickCustomParts() {
         Entity self = (Entity) (Object) this;
         if (hitboxlib$definitions.isEmpty()) {
@@ -164,6 +173,19 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
             part.yo = part.getY();
             part.zo = part.getZ();
             part.setPos(pos.x, pos.y, pos.z);
+
+            if (!self.level().isClientSide)
+                continue;
+
+            if (!part.hasCollision())
+                continue;
+
+            Vec3 lastSynced = hitboxlib$syncedPartPositions.get(entry.getKey());
+            if (lastSynced == null || lastSynced.distanceToSqr(pos) > 1.0E-6D) {
+                hitboxlib$syncedPartPositions.put(entry.getKey(), pos);
+                dev.customhitboxlib.network.CustomPartPositionSyncPacket.send(
+                        new dev.customhitboxlib.network.CustomPartPositionSyncPacket(entry.getKey(), pos));
+            }
         }
 
         hitboxlib$partArray = hitboxlib$instances.values().toArray(new PartEntity<?>[0]);
