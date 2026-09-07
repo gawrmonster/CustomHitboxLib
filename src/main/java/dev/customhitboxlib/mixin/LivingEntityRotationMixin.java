@@ -4,9 +4,11 @@ import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.util.Mth;
 import net.neoforged.neoforge.entity.PartEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -49,6 +51,23 @@ public abstract class LivingEntityRotationMixin {
         if (!wasColliding && nowColliding) {
             this.yHeadRot = oldYHeadRot;
             ci.cancel();
+            return;
+        }
+
+        if (self instanceof Player living) {
+            float diff = Mth.wrapDegrees(yHeadRot - living.yBodyRot);
+            if (Math.abs(diff) > 90.0F) {
+                float oldBodyRot = living.yBodyRot;
+                float targetBodyRot = yHeadRot - Math.copySign(90.0F, diff);
+
+                living.yBodyRot = targetBodyRot;
+                boolean bodyBlocked = hitboxlib$partsCollide(self);
+                living.yBodyRot = oldBodyRot;
+
+                if (bodyBlocked) {
+                    ci.cancel();
+                }
+            }
         }
     }
 
