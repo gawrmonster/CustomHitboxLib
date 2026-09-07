@@ -56,8 +56,17 @@ public abstract class EntityRotationMixin {
 
         float headBodyDiff = Mth.wrapDegrees(newYRot - living.yBodyRot);
 
-        if (self instanceof Player && Math.abs(headBodyDiff) > 75.0F) {
-            ci.cancel();
+        if (self instanceof Player && Math.abs(headBodyDiff) > 90.0F) {
+            float oldBodyRot = living.yBodyRot;
+            float targetBodyRot = newYRot - Math.copySign(90.0F, headBodyDiff);
+
+            living.yBodyRot = targetBodyRot;
+            boolean bodyBlocked = hitboxlib$partsCollide(self);
+            living.yBodyRot = oldBodyRot;
+
+            if (bodyBlocked) {
+                ci.cancel();
+            }
         }
     }
 

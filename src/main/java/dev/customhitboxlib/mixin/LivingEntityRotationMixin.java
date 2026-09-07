@@ -15,6 +15,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import dev.customhitboxlib.CustomHitboxLib;
 
 @Mixin(LivingEntity.class)
@@ -52,6 +54,23 @@ public abstract class LivingEntityRotationMixin {
         if (!wasColliding && nowColliding) {
             this.yHeadRot = oldYHeadRot;
             ci.cancel();
+            return;
+        }
+
+        if (self instanceof Player) {
+            float diff = Mth.wrapDegrees(yHeadRot - living.yBodyRot);
+            if (Math.abs(diff) > 90.0F) {
+                float oldBodyRot = living.yBodyRot;
+                float targetBodyRot = yHeadRot - Math.copySign(90.0F, diff);
+
+                living.yBodyRot = targetBodyRot;
+                boolean bodyBlocked = hitboxlib$partsCollide(self);
+                living.yBodyRot = oldBodyRot;
+
+                if (bodyBlocked) {
+                    ci.cancel();
+                }
+            }
         }
     }
 
