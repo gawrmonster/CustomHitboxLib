@@ -1,6 +1,7 @@
 package dev.customhitboxlib.network;
 
 import dev.customhitboxlib.api.ICustomMultipart;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -8,7 +9,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class CustomPartPositionSyncPacket implements CustomPacketPayload {
@@ -18,7 +18,7 @@ public class CustomPartPositionSyncPacket implements CustomPacketPayload {
     private final double y;
     private final double z;
 
-    public static final CustomPacketPayload.Type<CustomPartPositionSyncPacket> TYPE = CustomPacketPayload.createType("customhitboxlib:sync_part_position");
+    public static final CustomPacketPayload.Type<CustomPartPositionSyncPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("customhitboxlib", "sync_part_position"));
     public static final StreamCodec<FriendlyByteBuf, CustomPartPositionSyncPacket> STREAM_CODEC = CustomPacketPayload.codec(CustomPartPositionSyncPacket::write, CustomPartPositionSyncPacket::new);
 
     public CustomPartPositionSyncPacket(String partName, Vec3 pos) {
