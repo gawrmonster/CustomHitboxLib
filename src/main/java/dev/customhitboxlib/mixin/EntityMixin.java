@@ -66,110 +66,105 @@ public abstract class EntityMixin {
         }
     }
 
-
-    @Redirect(method = "collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;collideBoundingBox(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/level/Level;Ljava/util/List;)Lnet/minecraft/world/phys/Vec3;"))
-    private Vec3 hitboxlib$collideBoundingBox(Entity entity, Vec3 movement, AABB aabb, Level level,
-            List<VoxelShape> entityShapes) {
+    @Inject(method = "collide(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;", at = @At("HEAD"), cancellable = true)
+    private void hitboxlib$overrideCollide(Vec3 movement, CallbackInfoReturnable<Vec3> cir) {
         Entity self = (Entity) (Object) this;
 
-        if (!(self instanceof LivingEntity) || !(self instanceof ICustomMultipart mp)) {
-            return Entity.collideBoundingBox(entity, movement, aabb, level, entityShapes);
+        if (!(self instanceof LivingEntity) || !(self instanceof ICustomMultipart mp) || self.noPhysics) {
+            return;
         }
 
         PartEntity<?>[] ownParts = mp.getCustomParts();
-        Vec3 result = movement;
+        if (ownParts == null || ownParts.length == 0) {
+            return;
+        }
 
-        if (mp.isMainHitboxCollision() && !self.noPhysics) {
-            ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList
-                    .builderWithExpectedSize(entityShapes.size() + 10);
-            entityShapeBuilder.addAll(entityShapes);
+        if (movement.lengthSqr() == 0.0D) {
+            cir.setReturnValue(movement);
+            return;
+        }
 
-            AABB searchBox = self.getBoundingBox().inflate(1.0E-7D);
-            List<Entity> nearbyEntities = level.getEntities(self, searchBox);
+        Vec3 vec3 = hitboxlib$resolveCompoundCollision(self, mp, movement, Vec3.ZERO);
 
-            for (Entity e : nearbyEntities) {
-                if (e == self)
-                    continue;
-                if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts())
-                    continue;
+        boolean flag = movement.x != vec3.x;
+        boolean flag1 = movement.y != vec3.y;
+        boolean flag2 = movement.z != vec3.z;
+        boolean flag3 = self.onGround() || (flag1 && movement.y < 0.0D);
+        float stepHeight = self.getStepHeight();
 
-                PartEntity<?>[] parts = otherMp.getCustomParts();
-                if (parts == null)
-                    continue;
+        if (stepHeight > 0.0F && flag3 && (flag || flag2)) {
+            Vec3 vec31 = hitboxlib$resolveCompoundCollision(self, mp, new Vec3(movement.x, (double) stepHeight, movement.z), Vec3.ZERO);
 
-                for (PartEntity<?> part : parts) {
-                    if (!(part instanceof CustomEntityPart cp))
-                        continue;
-                    if (!e.canCollideWith(self))
-                        continue;
-                    if (!cp.hasCollision())
-                        continue;
+            Vec3 vec32 = hitboxlib$resolveCompoundCollision(self, mp, new Vec3(0.0D, (double) stepHeight, 0.0D), new Vec3(movement.x, 0.0D, movement.z));
 
-                    entityShapeBuilder.add(Shapes.create(cp.getBoundingBox()));
+            if (vec32.y < (double) stepHeight) {
+                Vec3 vec33 = hitboxlib$resolveCompoundCollision(self, mp, new Vec3(movement.x, 0.0D, movement.z), vec32).add(vec32);
+                if (vec33.horizontalDistanceSqr() > vec31.horizontalDistanceSqr()) {
+                    vec31 = vec33;
                 }
             }
 
-            WorldBorder worldborder = level.getWorldBorder();
-            boolean inBorder = entity != null && worldborder.isInsideCloseToBorder(entity, aabb.expandTowards(movement));
-            if (inBorder) {
-                entityShapeBuilder.add(worldborder.getCollisionShape());
+            if (vec31.horizontalDistanceSqr() > vec3.horizontalDistanceSqr()) {
+                Vec3 dropVec = new Vec3(0.0D, -vec31.y + movement.y, 0.0D);
+                Vec3 finalDrop = hitboxlib$resolveCompoundCollision(self, mp, dropVec, vec31);
+                cir.setReturnValue(vec31.add(finalDrop));
+                return;
             }
-
-            AABB blockArea = aabb.expandTowards(movement);
-            level.getBlockCollisions(entity, blockArea).forEach(entityShapeBuilder::add);
-
-            result = collideWithShapes(movement, aabb, entityShapeBuilder.build());
         }
 
-        if (ownParts != null && !self.noPhysics) {
+        cir.setReturnValue(vec3);
+    }
+
+    private Vec3 hitboxlib$resolveCompoundCollision(Entity self, ICustomMultipart mp, Vec3 movement, Vec3 positionalOffset) {
+        Vec3 result = movement;
+
+        if (mp.isMainHitboxCollision()) {
+            AABB mainBox = self.getBoundingBox().move(positionalOffset);
+            List<VoxelShape> shapes = hitboxlib$collectShapesForBox(self, mainBox, result, positionalOffset);
+            result = collideWithShapes(result, mainBox, shapes);
+        }
+
+        PartEntity<?>[] ownParts = mp.getCustomParts();
+        if (ownParts != null) {
             for (PartEntity<?> part : ownParts) {
                 if (part instanceof CustomEntityPart cp && cp.hasCollision()) {
-                    AABB partBox = cp.getBoundingBox();
-
-                    ImmutableList.Builder<VoxelShape> entityShapeBuilder = ImmutableList
-                            .builderWithExpectedSize(entityShapes.size() + 10);
-                    entityShapeBuilder.addAll(level.getEntityCollisions(self, partBox.expandTowards(result)));
-
-                    AABB searchBox = partBox.inflate(1.0E-7D);
-                    List<Entity> nearbyEntities = level.getEntities(self, searchBox);
-
-                    for (Entity e : nearbyEntities) {
-                        if (e == self)
-                            continue;
-                        if (!(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts())
-                            continue;
-
-                        PartEntity<?>[] parts = otherMp.getCustomParts();
-                        if (parts == null)
-                            continue;
-
-                        for (PartEntity<?> otherPart : parts) {
-                            if (!(otherPart instanceof CustomEntityPart otherCp))
-                                continue;
-                            if (!e.canCollideWith(self))
-                                continue;
-                            if (!otherCp.hasCollision())
-                                continue;
-
-                            entityShapeBuilder.add(Shapes.create(otherCp.getBoundingBox()));
-                        }
-                    }
-
-                    WorldBorder worldborder = level.getWorldBorder();
-                    boolean inBorder = entity != null && worldborder.isInsideCloseToBorder(entity, partBox.expandTowards(result));
-                    if (inBorder) {
-                        entityShapeBuilder.add(worldborder.getCollisionShape());
-                    }
-
-                    AABB partBlockArea = partBox.expandTowards(result);
-                    level.getBlockCollisions(entity, partBlockArea).forEach(entityShapeBuilder::add);
-
-                    result = collideWithShapes(result, partBox, entityShapeBuilder.build());
+                    AABB partBox = cp.getBoundingBox().move(positionalOffset);
+                    List<VoxelShape> shapes = hitboxlib$collectShapesForBox(self, partBox, result, positionalOffset);
+                    result = collideWithShapes(result, partBox, shapes);
                 }
             }
         }
 
         return result;
+    }
+
+    private List<VoxelShape> hitboxlib$collectShapesForBox(Entity self, AABB box, Vec3 movement, Vec3 positionalOffset) {
+        AABB area = box.expandTowards(movement);
+        ImmutableList.Builder<VoxelShape> builder = ImmutableList.builder();
+
+        builder.addAll(self.level().getEntityCollisions(self, area));
+
+        List<Entity> nearbyEntities = self.level().getEntities(self, area.inflate(1.0E-7D));
+        for (Entity e : nearbyEntities) {
+            if (e == self || !(e instanceof ICustomMultipart otherMp) || !otherMp.hasCustomParts()) continue;
+            PartEntity<?>[] parts = otherMp.getCustomParts();
+            if (parts == null) continue;
+
+            for (PartEntity<?> otherPart : parts) {
+                if (otherPart instanceof CustomEntityPart otherCp && e.canCollideWith(self) && otherCp.hasCollision()) {
+                    builder.add(Shapes.create(otherCp.getBoundingBox()));
+                }
+            }
+        }
+
+        WorldBorder border = self.level().getWorldBorder();
+        if (border.isInsideCloseToBorder(self, area)) {
+            builder.add(border.getCollisionShape());
+        }
+
+        self.level().getBlockCollisions(self, area).forEach(builder::add);
+
+        return builder.build();
     }
 
     @Inject(method = "checkInsideBlocks()V", at = @At("HEAD"), cancellable = true)

@@ -1,9 +1,11 @@
 package dev.customhitboxlib.network;
 
+import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.simple.SimpleChannel;
 
@@ -47,7 +49,19 @@ public class CustomPartPositionSyncPacket {
             if (!(serverPlayer instanceof ICustomMultipart mp)) return;
 
             Map<String, Vec3> synced = mp.getSyncedPartPositions();
-            synced.put(msg.partName, new Vec3(msg.x, msg.y, msg.z));
+            Vec3 newPos = new Vec3(msg.x, msg.y, msg.z);
+            synced.put(msg.partName, newPos);
+            for (PartEntity<?> part : mp.getCustomParts()) {
+                if (part instanceof CustomEntityPart cp) {
+                    String name = cp.getCustomName() != null ? cp.getCustomName().getString() : "null";
+                    if (name.equals(msg.partName)) {
+                        cp.setPos(newPos.x, newPos.y, newPos.z);
+                        cp.xo = newPos.x;
+                        cp.yo = newPos.y;
+                        cp.zo = newPos.z;
+                    }
+                }
+            }
         });
         ctx.get().setPacketHandled(true);
     }
