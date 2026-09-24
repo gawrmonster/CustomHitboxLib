@@ -49,19 +49,7 @@ public class CustomPartPositionSyncPacket {
             if (!(serverPlayer instanceof ICustomMultipart mp)) return;
 
             Map<String, Vec3> synced = mp.getSyncedPartPositions();
-            Vec3 newPos = new Vec3(msg.x, msg.y, msg.z);
-            synced.put(msg.partName, newPos);
-            for (PartEntity<?> part : mp.getCustomParts()) {
-                if (part instanceof CustomEntityPart cp) {
-                    String name = cp.getCustomName() != null ? cp.getCustomName().getString() : "null";
-                    if (name.equals(msg.partName)) {
-                        cp.setPos(newPos.x, newPos.y, newPos.z);
-                        cp.xo = newPos.x;
-                        cp.yo = newPos.y;
-                        cp.zo = newPos.z;
-                    }
-                }
-            }
+            synced.put(msg.partName, new Vec3(msg.x, msg.y, msg.z));
         });
         ctx.get().setPacketHandled(true);
     }
