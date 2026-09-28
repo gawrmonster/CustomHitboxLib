@@ -7,6 +7,11 @@ import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import dev.customhitboxlib.api.CustomEntityPart;
+import dev.customhitboxlib.api.ICustomMultipart;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.entity.PartEntity;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Player.class)
@@ -25,5 +30,46 @@ public abstract class PlayerMixin {
         if (self.level().noCollision(self, boundingBox.deflate(1.0E-7D))) {
             cir.setReturnValue(true);
         }
+    }
+
+    @Inject(
+        method = "canInteractWithEntity(Lnet/minecraft/world/entity/Entity;D)Z",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void customHitbox$canInteractWithEntity(Entity entity, double distance, CallbackInfoReturnable<Boolean> cir) {
+        Player self = (Player) (Object) this;
+
+        if (entity == null || entity.isRemoved()) {
+            cir.setReturnValue(false);
+            return;
+        }
+
+        Vec3 eye = self.getEyePosition();
+        double d0 = self.entityInteractionRange() + distance;
+        double maxDistSqr = d0 * d0;
+
+        AABB aabb = entity.getBoundingBox().inflate(entity.getPickRadius());
+        if (aabb.distanceToSqr(eye) < maxDistSqr) {
+            cir.setReturnValue(true);
+            return;
+        }
+
+        if (entity instanceof ICustomMultipart mp && mp.hasCustomParts()) {
+            PartEntity<?>[] parts = mp.getCustomParts();
+            if (parts != null) {
+                for (PartEntity<?> part : parts) {
+                    if (!(part instanceof CustomEntityPart cp) || !cp.isPickable()) continue;
+
+                    AABB partAABB = cp.getBoundingBox().inflate(cp.getPickRadius());
+                    if (partAABB.distanceToSqr(eye) < maxDistSqr) {
+                        cir.setReturnValue(true);
+                        return;
+                    }
+                }
+            }
+        }
+
+        cir.setReturnValue(false);
     }
 }
