@@ -54,7 +54,7 @@ public class CustomHitboxLib {
             if (def.matches(entity)) {
                 if (entity instanceof ICustomMultipart mp) {
                     for (PartDefinitionLoader.PartEntry part : def.parts()) {
-                        mp.addCustomPart(part.name(), part.toApiDefinition());
+                        mp.addCustomPart(part.name(), part.toApiDefinition(), def.pose());
                     }
                     if (def.mainHitboxPickable() != null) mp.setMainHitboxPickable(def.mainHitboxPickable());
                     if (def.mainHitboxPushable() != null) mp.setMainHitboxPushable(def.mainHitboxPushable());

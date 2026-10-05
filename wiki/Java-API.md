@@ -18,8 +18,10 @@ import dev.customhitboxlib.api.ICustomMultipart;
 |---|---|---|
 | `getCustomParts()` | `PartEntity<?>[]` | Returns all custom parts, or `null` if none |
 | `hasCustomParts()` | `boolean` | Whether this entity has any custom parts |
-| `addCustomPart(String name, PartDefinition def)` | `void` | Adds a new part by name |
-| `removeCustomPart(String name)` | `void` | Removes a part by name |
+| `addCustomPart(String name, PartDefinition def)` | `void` | Adds a new part by name (defaults to `"standing"` pose) |
+| `addCustomPart(String name, PartDefinition def, String pose)` | `void` | Adds a new part by name for a specific entity pose |
+| `removeCustomPart(String name)` | `void` | Removes a part by name from all poses |
+| `removeCustomPart(String name, String pose)` | `void` | Removes a part by name for a specific pose |
 | `tickCustomParts()` | `void` | Repositions all parts using their positioners |
 | `setMainHitboxPickable(boolean)` | `void` | Sets whether the main hitbox can be targeted |
 | `isMainHitboxPickable()` | `boolean` | Whether the main hitbox can be targeted |
@@ -37,6 +39,15 @@ if (entity instanceof ICustomMultipart mp) {
     mp.addCustomPart("my_part", PartDefinition.of("my_part", 1.0F, 1.0F, myPositioner));
     mp.setMainHitboxCollision(false);
 }
+```
+
+### Pose-Specific Parts
+
+```java
+// Add a part that only appears when the entity is crouching
+mp.addCustomPart("turtle_shell", PartDefinition.of("turtle_shell", 1.5F, 0.5F, myPositioner), "crouching");
+
+// Missing pose variants fall back to "standing" automatically
 ```
 
 ---
@@ -148,6 +159,9 @@ import dev.customhitboxlib.api.MultipartHelper;
 // Add a part
 MultipartHelper.addPart(entity, "name", 1.0F, 1.0F, positioner);
 MultipartHelper.addPart(entity, "name", 1.0F, 1.0F, positioner, true, false, true, false);
+
+// Add a pose-specific part
+MultipartHelper.addPart(entity, "name", 1.0F, 1.0F, positioner, true, false, true, false, "crouching");
 
 // Remove a part
 MultipartHelper.removePart(entity, "name");

@@ -12,7 +12,11 @@ public interface ICustomMultipart {
 
     void addCustomPart(String name, PartDefinition definition);
 
+    void addCustomPart(String name, PartDefinition definition, String pose);
+
     void removeCustomPart(String name);
+
+    void removeCustomPart(String name, String pose);
 
     boolean hasCustomParts();
 
