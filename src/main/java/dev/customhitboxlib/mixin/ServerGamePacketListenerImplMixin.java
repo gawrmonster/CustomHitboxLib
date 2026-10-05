@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -17,8 +16,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
-import java.util.Map;
 
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class ServerGamePacketListenerImplMixin {
@@ -45,17 +42,12 @@ public abstract class ServerGamePacketListenerImplMixin {
                 double deltaX = x - player.getX();
                 double deltaY = y - player.getY();
                 double deltaZ = z - player.getZ();
-                Map<String, Vec3> synced = mp.getSyncedPartPositions();
 
                 for (PartEntity<?> part : parts) {
                     if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
                         continue;
 
-                    Vec3 syncedPos = synced.get(cp.getCustomName() != null ? cp.getCustomName().getString() : null);
-                    AABB oldPartBB = syncedPos != null
-                            ? cp.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(syncedPos)
-                            : cp.getBoundingBox();
-
+                    AABB oldPartBB = cp.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(cp.position());
                     AABB newPartBB = oldPartBB.move(deltaX, deltaY, deltaZ);
 
                     //LOGGER.info("hitboxlib part={} oldPartBB={} newPartBB={}", cp.getCustomName() != null ? cp.getCustomName().getString() : part, oldPartBB, newPartBB);

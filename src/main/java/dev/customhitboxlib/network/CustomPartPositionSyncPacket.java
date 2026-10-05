@@ -1,45 +1,40 @@
 package dev.customhitboxlib.network;
 
-import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 public class CustomPartPositionSyncPacket {
+    private final float yRot;
+    private final float xRot;
+    private final float yBodyRot;
+    private final float yHeadRot;
 
-    private final String partName;
-    private final double x;
-    private final double y;
-    private final double z;
-
-    public CustomPartPositionSyncPacket(String partName, Vec3 pos) {
-        this.partName = partName;
-        this.x = pos.x;
-        this.y = pos.y;
-        this.z = pos.z;
+    public CustomPartPositionSyncPacket(float yRot, float xRot, float yBodyRot, float yHeadRot) {
+        this.yRot = yRot;
+        this.xRot = xRot;
+        this.yBodyRot = yBodyRot;
+        this.yHeadRot = yHeadRot;
     }
 
     public static void encode(CustomPartPositionSyncPacket msg, FriendlyByteBuf buf) {
-        buf.writeUtf(msg.partName);
-        buf.writeDouble(msg.x);
-        buf.writeDouble(msg.y);
-        buf.writeDouble(msg.z);
+        buf.writeFloat(msg.yRot);
+        buf.writeFloat(msg.xRot);
+        buf.writeFloat(msg.yBodyRot);
+        buf.writeFloat(msg.yHeadRot);
     }
 
     public static CustomPartPositionSyncPacket decode(FriendlyByteBuf buf) {
-        String partName = buf.readUtf();
-        double x = buf.readDouble();
-        double y = buf.readDouble();
-        double z = buf.readDouble();
-        return new CustomPartPositionSyncPacket(partName, new Vec3(x, y, z));
+        return new CustomPartPositionSyncPacket(
+            buf.readFloat(),
+            buf.readFloat(),
+            buf.readFloat(),
+            buf.readFloat()
+        );
     }
 
     public static void handle(CustomPartPositionSyncPacket msg, Supplier<NetworkEvent.Context> ctx) {
@@ -48,8 +43,7 @@ public class CustomPartPositionSyncPacket {
             if (serverPlayer == null) return;
             if (!(serverPlayer instanceof ICustomMultipart mp)) return;
 
-            Map<String, Vec3> synced = mp.getSyncedPartPositions();
-            synced.put(msg.partName, new Vec3(msg.x, msg.y, msg.z));
+            mp.setSyncedRotation(msg.yRot, msg.xRot, msg.yBodyRot, msg.yHeadRot);
         });
         ctx.get().setPacketHandled(true);
     }

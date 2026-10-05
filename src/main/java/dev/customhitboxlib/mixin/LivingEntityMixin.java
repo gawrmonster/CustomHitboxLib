@@ -7,12 +7,14 @@ import dev.customhitboxlib.api.ICustomMultipart;
 import dev.customhitboxlib.api.PartDefinition;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.entity.PartEntity;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,7 +53,28 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     private boolean hitboxlib$mainHitboxCollision = true;
 
     @Unique
-    private final Map<String, Vec3> hitboxlib$syncedPartPositions = new HashMap<>();
+    private float hitboxlib$syncedYRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$syncedXRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$syncedYBodyRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$syncedYHeadRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$lastSentYRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$lastSentXRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$lastSentYBodyRot = Float.NaN;
+
+    @Unique
+    private float hitboxlib$lastSentYHeadRot = Float.NaN;
 
     private LivingEntityMixin() {
         super(null, null);
@@ -148,8 +170,11 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     }
 
     @Override
-    public Map<String, Vec3> getSyncedPartPositions() {
-        return hitboxlib$syncedPartPositions;
+    public void setSyncedRotation(float yRot, float xRot, float yBodyRot, float yHeadRot) {
+        hitboxlib$syncedYRot = yRot;
+        hitboxlib$syncedXRot = xRot;
+        hitboxlib$syncedYBodyRot = yBodyRot;
+        hitboxlib$syncedYHeadRot = yHeadRot;
     }
 
     @Override
@@ -160,6 +185,27 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         }
         if (!hitboxlib$initialized) {
             hitboxlib$initialize();
+        }
+
+        boolean isPlayer = self instanceof Player;
+        boolean hasSyncedRotation = isPlayer &&
+            !Float.isNaN(hitboxlib$syncedYRot) &&
+            !self.level().isClientSide;
+
+        if (hasSyncedRotation) {
+            if (self.getYRot() != hitboxlib$syncedYRot) {
+                self.setYRot(hitboxlib$syncedYRot);
+            }
+            if (self.getXRot() != hitboxlib$syncedXRot) {
+                self.setXRot(hitboxlib$syncedXRot);
+            }
+            LivingEntity living = (LivingEntity)(Object)this;
+            if (living.yBodyRot != hitboxlib$syncedYBodyRot) {
+                living.setYBodyRot(hitboxlib$syncedYBodyRot);
+            }
+            if (living.yHeadRot != hitboxlib$syncedYHeadRot) {
+                living.setYHeadRot(hitboxlib$syncedYHeadRot);
+            }
         }
 
         for (Map.Entry<String, PartDefinition> entry : hitboxlib$definitions.entrySet()) {
@@ -173,22 +219,24 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
             part.yo = part.getY();
             part.zo = part.getZ();
             part.setPos(pos.x, pos.y, pos.z);
-
-            if (!self.level().isClientSide)
-                continue;
-
-            if (!part.hasCollision())
-                continue;
-
-            Vec3 lastSynced = hitboxlib$syncedPartPositions.get(entry.getKey());
-            if (lastSynced == null || lastSynced.distanceToSqr(pos) > 1.0E-6D) {
-                hitboxlib$syncedPartPositions.put(entry.getKey(), pos);
-                dev.customhitboxlib.network.CustomPartPositionSyncPacket.send(
-                        new dev.customhitboxlib.network.CustomPartPositionSyncPacket(entry.getKey(), pos));
-            }
         }
 
         hitboxlib$partArray = hitboxlib$instances.values().toArray(new PartEntity<?>[0]);
+
+        if (self.level().isClientSide && isPlayer) {
+            if (hitboxlib$lastSentYRot != self.getYRot() ||
+                hitboxlib$lastSentXRot != self.getXRot() ||
+                hitboxlib$lastSentYBodyRot != ((LivingEntity)(Object)this).yBodyRot ||
+                hitboxlib$lastSentYHeadRot != ((LivingEntity)(Object)this).yHeadRot) {
+                hitboxlib$lastSentYRot = self.getYRot();
+                hitboxlib$lastSentXRot = self.getXRot();
+                hitboxlib$lastSentYBodyRot = ((LivingEntity)(Object)this).yBodyRot;
+                hitboxlib$lastSentYHeadRot = ((LivingEntity)(Object)this).yHeadRot;
+                dev.customhitboxlib.network.CustomPartPositionSyncPacket.send(
+                        new dev.customhitboxlib.network.CustomPartPositionSyncPacket(
+                                self.getYRot(), self.getXRot(), ((LivingEntity)(Object)this).yBodyRot, ((LivingEntity)(Object)this).yHeadRot));
+            }
+        }
     }
 
     private void hitboxlib$initialize() {

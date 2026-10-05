@@ -23,9 +23,9 @@ public class CustomHitboxLib {
     public static final Logger LOGGER = LogManager.getLogger();
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MOD_ID, "main"),
-            () -> "1",
-            "1"::equals,
-            "1"::equals
+            () -> "2",
+            "2"::equals,
+            "2"::equals
     );
 
     public CustomHitboxLib() {
