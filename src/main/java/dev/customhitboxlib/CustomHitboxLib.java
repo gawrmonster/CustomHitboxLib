@@ -26,7 +26,7 @@ public class CustomHitboxLib {
     }
 
     private void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToServer(
+        event.registrar("2").playToServer(
                 CustomPartPositionSyncPacket.TYPE,
                 CustomPartPositionSyncPacket.STREAM_CODEC,
                 CustomPartPositionSyncPacket::handle

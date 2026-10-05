@@ -9,7 +9,6 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -72,17 +71,12 @@ public abstract class ServerGamePacketListenerImplMixin {
                 double deltaX = x - player.getX();
                 double deltaY = y - player.getY();
                 double deltaZ = z - player.getZ();
-                java.util.Map<String, Vec3> synced = mp.getSyncedPartPositions();
 
                 for (PartEntity<?> part : parts) {
                     if (!(part instanceof CustomEntityPart cp) || !cp.hasCollision())
                         continue;
 
-                    Vec3 syncedPos = synced.get(cp.getCustomName() != null ? cp.getCustomName().getString() : null);
-                    AABB oldPartBB = syncedPos != null
-                            ? cp.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(syncedPos)
-                            : cp.getBoundingBox();
-
+                    AABB oldPartBB = cp.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(cp.position());
                     AABB newPartBB = oldPartBB.move(deltaX, deltaY, deltaZ);
 
                     VoxelShape oldPartShape = Shapes.create(oldPartBB.deflate(1.0E-5F));

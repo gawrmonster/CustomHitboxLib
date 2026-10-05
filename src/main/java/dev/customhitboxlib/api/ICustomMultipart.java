@@ -28,5 +28,5 @@ public interface ICustomMultipart {
 
     boolean isMainHitboxCollision();
 
-    java.util.Map<String, Vec3> getSyncedPartPositions();
+    void setSyncedRotation(float yRot, float xRot, float yBodyRot, float yHeadRot);
 }

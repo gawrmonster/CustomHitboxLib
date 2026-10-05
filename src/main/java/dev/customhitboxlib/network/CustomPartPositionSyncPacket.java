@@ -1,11 +1,10 @@
 package dev.customhitboxlib.network;
 
-import dev.customhitboxlib.api.CustomEntityPart;
 import dev.customhitboxlib.api.ICustomMultipart;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
@@ -15,33 +14,33 @@ import java.util.Map;
 
 public class CustomPartPositionSyncPacket implements CustomPacketPayload {
 
-    private final String partName;
-    private final double x;
-    private final double y;
-    private final double z;
+    private final float yRot;
+    private final float xRot;
+    private final float yBodyRot;
+    private final float yHeadRot;
 
     public static final CustomPacketPayload.Type<CustomPartPositionSyncPacket> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("customhitboxlib", "sync_part_position"));
     public static final StreamCodec<FriendlyByteBuf, CustomPartPositionSyncPacket> STREAM_CODEC = CustomPacketPayload.codec(CustomPartPositionSyncPacket::write, CustomPartPositionSyncPacket::new);
 
-    public CustomPartPositionSyncPacket(String partName, Vec3 pos) {
-        this.partName = partName;
-        this.x = pos.x;
-        this.y = pos.y;
-        this.z = pos.z;
+    public CustomPartPositionSyncPacket(float yRot, float xRot, float yBodyRot, float yHeadRot) {
+        this.yRot = yRot;
+        this.xRot = xRot;
+        this.yBodyRot = yBodyRot;
+        this.yHeadRot = yHeadRot;
     }
 
     private CustomPartPositionSyncPacket(FriendlyByteBuf buf) {
-        this.partName = buf.readUtf();
-        this.x = buf.readDouble();
-        this.y = buf.readDouble();
-        this.z = buf.readDouble();
+        this.yRot = buf.readFloat();
+        this.xRot = buf.readFloat();
+        this.yBodyRot = buf.readFloat();
+        this.yHeadRot = buf.readFloat();
     }
 
     private void write(FriendlyByteBuf buf) {
-        buf.writeUtf(partName);
-        buf.writeDouble(x);
-        buf.writeDouble(y);
-        buf.writeDouble(z);
+        buf.writeFloat(yRot);
+        buf.writeFloat(xRot);
+        buf.writeFloat(yBodyRot);
+        buf.writeFloat(yHeadRot);
     }
 
     @Override
@@ -55,18 +54,17 @@ public class CustomPartPositionSyncPacket implements CustomPacketPayload {
             if (serverPlayer == null) return;
             if (!(serverPlayer instanceof ICustomMultipart mp)) return;
 
-            Map<String, Vec3> synced = mp.getSyncedPartPositions();
-            synced.put(msg.partName, new Vec3(msg.x, msg.y, msg.z));
+            mp.setSyncedRotation(msg.yRot, msg.xRot, msg.yBodyRot, msg.yHeadRot);
         });
     }
 
-    public static void send(String partName, Vec3 pos) {
+    public static void send(float yRot, float xRot, float yBodyRot, float yHeadRot) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc == null) return;
         var connection = mc.getConnection();
         if (connection == null) return;
         var conn = connection.getConnection();
         if (conn == null) return;
-        conn.send(new CustomPartPositionSyncPacket(partName, pos).toVanillaServerbound());
+        conn.send(new CustomPartPositionSyncPacket(yRot, xRot, yBodyRot, yHeadRot).toVanillaServerbound());
     }
 }
