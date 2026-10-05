@@ -176,6 +176,51 @@ Parts that follow the entity's head rotation. Useful for accessories that should
 }
 ```
 
+### Pose-Specific Parts (Datapack)
+
+Define different parts for different entity poses. Parts automatically switch when the entity changes pose.
+
+**File:** `data/mymod/custom_parts/player_armor.json`
+
+```json
+[
+  {
+    "id": "minecraft:player",
+    "pose": "standing",
+    "parts": [
+      {
+        "name": "turtle_shell",
+        "width": 1.5,
+        "height": 1.5,
+        "offset": [0, 0, 0],
+        "pickable": true,
+        "pushable": false,
+        "collision": true,
+        "suffocate": false
+      }
+    ]
+  },
+  {
+    "id": "minecraft:player",
+    "pose": "crouching",
+    "parts": [
+      {
+        "name": "turtle_shell",
+        "width": 1.5,
+        "height": 0.5,
+        "offset": [0, 0, 0],
+        "pickable": true,
+        "pushable": false,
+        "collision": true,
+        "suffocate": false
+      }
+    ]
+  }
+]
+```
+
+When the player stands up, the shell is 1.5 blocks tall. When crouching, it shrinks to 0.5 blocks tall. Missing pose variants automatically fall back to the `"standing"` definition set.
+
 ---
 
 ## Java API Examples
@@ -285,10 +330,31 @@ if (entity instanceof ICustomMultipart mp) {
         // ...
     }
 
-    // Remove a part
+    // Remove a part from all poses
     mp.removeCustomPart("shield");
+
+    // Remove a part from a specific pose only
+    mp.removeCustomPart("turtle_shell", "crouching");
 }
 ```
+
+### Pose-Specific Parts (Java API)
+
+Add parts that only appear when the entity is in a specific pose:
+
+```java
+if (entity instanceof ICustomMultipart mp) {
+    // Part only visible while standing
+    mp.addCustomPart("cape", PartDefinition.of("cape", 1.0F, 1.5F,
+        PartPositioners.atOffset(0, 1.0, 0.3), true, false, false, false), "standing");
+
+    // Part only visible while crouching
+    mp.addCustomPart("turtle_shell", PartDefinition.of("turtle_shell", 1.5F, 0.5F,
+        PartPositioners.atOffset(0, 0.5, 0), true, false, true, false), "crouching");
+}
+```
+
+Parts automatically switch when the entity changes pose. Missing pose variants fall back to `"standing"`.
 
 ### Controlling Main Hitbox Behavior
 

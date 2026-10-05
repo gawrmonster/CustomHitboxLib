@@ -45,9 +45,11 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
             JsonElement element = entry.getValue();
 
             try {
-                CustomPartDefinition def = parseDefinition(location.toString(), element);
-                if (def != null) {
-                    newParts.put(location.toString(), def);
+                List<CustomPartDefinition> defs = parseDefinitions(location.toString(), element);
+                for (CustomPartDefinition def : defs) {
+                    if (def != null) {
+                        newParts.put(location.toString() + "#" + def.pose(), def);
+                    }
                 }
             } catch (Exception e) {
                 CustomHitboxLib.LOGGER.error("Failed to parse custom part definition: {}", location, e);
@@ -58,87 +60,103 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
         CustomHitboxLib.LOGGER.info("Loaded {} custom part definitions from datapacks", LOADED_PARTS.size());
     }
 
+    private static List<CustomPartDefinition> parseDefinitions(String key, JsonElement element) {
+        List<CustomPartDefinition> result = new ArrayList<>();
+
+        if (element.isJsonArray()) {
+            for (JsonElement item : element.getAsJsonArray()) {
+                CustomPartDefinition def = parseDefinition(key, item);
+                if (def != null) {
+                    result.add(def);
+                }
+            }
+        } else if (element.isJsonObject()) {
+            CustomPartDefinition def = parseDefinition(key, element);
+            if (def != null) {
+                result.add(def);
+            }
+        }
+
+        return result;
+    }
+
     private static CustomPartDefinition parseDefinition(String key, JsonElement element) {
         try {
             List<SelectorEntry> selectors = new ArrayList<>();
             List<PartEntry> partsList = new ArrayList<>();
             CustomHitboxFields fields = new CustomHitboxFields();
+            String pose = "standing";
 
-            if (element.isJsonArray()) {
-                for (JsonElement item : element.getAsJsonArray()) {
-                    parseEntry(item, selectors, partsList, fields);
-                }
-            } else if (element.isJsonObject()) {
-                parseEntry(element, selectors, partsList, fields);
-            } else {
+            JsonObject obj = element.getAsJsonObject();
+
+            if (obj.has("pose")) {
+                pose = obj.get("pose").getAsString().toLowerCase();
+            }
+
+            String entityId = null;
+            String nbtString = null;
+
+            if (obj.has("selector")) {
+                JsonObject sel = obj.getAsJsonObject("selector");
+                if (sel.has("id")) entityId = sel.get("id").getAsString();
+                if (sel.has("nbt")) nbtString = sel.get("nbt").getAsString();
+            } else if (obj.has("id")) {
+                entityId = obj.get("id").getAsString();
+                if (obj.has("nbt")) nbtString = obj.get("nbt").getAsString();
+            }
+
+            if (entityId == null && nbtString == null) {
                 return null;
+            }
+
+            selectors.add(new SelectorEntry(entityId, nbtString));
+
+            if (obj.has("main_hitbox_pickable")) fields.mainHitboxPickable = obj.get("main_hitbox_pickable").getAsBoolean();
+            if (obj.has("main_hitbox_pushable")) fields.mainHitboxPushable = obj.get("main_hitbox_pushable").getAsBoolean();
+            if (obj.has("main_hitbox_collision")) fields.mainHitboxCollision = obj.get("main_hitbox_collision").getAsBoolean();
+
+            if (!obj.has("parts")) {
+                return null;
+            }
+            for (JsonElement partEl : obj.getAsJsonArray("parts")) {
+                JsonObject partObj = partEl.getAsJsonObject();
+                String name = partObj.get("name").getAsString();
+                float width = partObj.get("width").getAsFloat();
+                float height = partObj.get("height").getAsFloat();
+
+                float ox = 0, oy = 0, oz = 0;
+                String positionerType = "offset";
+                if (partObj.has("positioner")) {
+                    JsonObject posObj = partObj.getAsJsonObject("positioner");
+                    if (posObj.has("type")) positionerType = posObj.get("type").getAsString();
+                    if (posObj.has("offset")) {
+                        var arr = posObj.getAsJsonArray("offset");
+                        ox = arr.get(0).getAsFloat();
+                        oy = arr.get(1).getAsFloat();
+                        oz = arr.get(2).getAsFloat();
+                    }
+                } else if (partObj.has("offset")) {
+                    var arr = partObj.getAsJsonArray("offset");
+                    ox = arr.get(0).getAsFloat();
+                    oy = arr.get(1).getAsFloat();
+                    oz = arr.get(2).getAsFloat();
+                }
+
+                boolean pickable = !partObj.has("pickable") || partObj.get("pickable").getAsBoolean();
+                boolean pushable = partObj.has("pushable") && partObj.get("pushable").getAsBoolean();
+                boolean collision = partObj.has("collision") && partObj.get("collision").getAsBoolean();
+                boolean suffocate = partObj.has("suffocate") && partObj.get("suffocate").getAsBoolean();
+
+                partsList.add(new PartEntry(name, width, height, ox, oy, oz, positionerType, pickable, pushable, collision, suffocate));
             }
 
             if (selectors.isEmpty() || partsList.isEmpty()) {
                 return null;
             }
 
-            return new CustomPartDefinition(selectors, partsList, fields.mainHitboxPickable, fields.mainHitboxPushable, fields.mainHitboxCollision);
+            return new CustomPartDefinition(selectors, partsList, fields.mainHitboxPickable, fields.mainHitboxPushable, fields.mainHitboxCollision, pose);
         } catch (Exception e) {
             return null;
-        }
-    }
-
-    private static void parseEntry(JsonElement element, List<SelectorEntry> selectors, List<PartEntry> partsList, CustomHitboxFields outFields) {
-        JsonObject obj = element.getAsJsonObject();
-        String entityId = null;
-        String nbtString = null;
-
-        if (obj.has("selector")) {
-            JsonObject sel = obj.getAsJsonObject("selector");
-            if (sel.has("id")) entityId = sel.get("id").getAsString();
-            if (sel.has("nbt")) nbtString = sel.get("nbt").getAsString();
-        } else if (obj.has("id")) {
-            entityId = obj.get("id").getAsString();
-            if (obj.has("nbt")) nbtString = obj.get("nbt").getAsString();
-        }
-
-        if (entityId == null && nbtString == null) {
-                return;
-            }
-
-        selectors.add(new SelectorEntry(entityId, nbtString));
-
-        if (obj.has("main_hitbox_pickable")) outFields.mainHitboxPickable = obj.get("main_hitbox_pickable").getAsBoolean();
-        if (obj.has("main_hitbox_pushable")) outFields.mainHitboxPushable = obj.get("main_hitbox_pushable").getAsBoolean();
-        if (obj.has("main_hitbox_collision")) outFields.mainHitboxCollision = obj.get("main_hitbox_collision").getAsBoolean();
-
-        if (!obj.has("parts")) return;
-        for (JsonElement partEl : obj.getAsJsonArray("parts")) {
-            JsonObject partObj = partEl.getAsJsonObject();
-            String name = partObj.get("name").getAsString();
-            float width = partObj.get("width").getAsFloat();
-            float height = partObj.get("height").getAsFloat();
-
-            float ox = 0, oy = 0, oz = 0;
-            String positionerType = "offset";
-            if (partObj.has("positioner")) {
-                JsonObject posObj = partObj.getAsJsonObject("positioner");
-                if (posObj.has("type")) positionerType = posObj.get("type").getAsString();
-                if (posObj.has("offset")) {
-                    var arr = posObj.getAsJsonArray("offset");
-                    ox = arr.get(0).getAsFloat();
-                    oy = arr.get(1).getAsFloat();
-                    oz = arr.get(2).getAsFloat();
-                }
-            } else if (partObj.has("offset")) {
-                var arr = partObj.getAsJsonArray("offset");
-                ox = arr.get(0).getAsFloat();
-                oy = arr.get(1).getAsFloat();
-                oz = arr.get(2).getAsFloat();
-            }
-
-            boolean pickable = !partObj.has("pickable") || partObj.get("pickable").getAsBoolean();
-            boolean pushable = partObj.has("pushable") && partObj.get("pushable").getAsBoolean();
-            boolean collision = partObj.has("collision") && partObj.get("collision").getAsBoolean();
-            boolean suffocate = partObj.has("suffocate") && partObj.get("suffocate").getAsBoolean();
-
-            partsList.add(new PartEntry(name, width, height, ox, oy, oz, positionerType, pickable, pushable, collision, suffocate));
         }
     }
 
@@ -153,7 +171,8 @@ public class PartDefinitionLoader extends SimpleJsonResourceReloadListener {
         List<PartEntry> parts,
         Boolean mainHitboxPickable,
         Boolean mainHitboxPushable,
-        Boolean mainHitboxCollision
+        Boolean mainHitboxCollision,
+        String pose
     ) {
         public boolean matches(Entity entity) {
             if (entity == null) return false;

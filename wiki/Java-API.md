@@ -18,8 +18,10 @@ import dev.customhitboxlib.api.ICustomMultipart;
 |---|---|---|
 | `getCustomParts()` | `PartEntity<?>[]` | Returns all custom parts, or `null` if none |
 | `hasCustomParts()` | `boolean` | Whether this entity has any custom parts |
-| `addCustomPart(String name, PartDefinition def)` | `void` | Adds a new part by name |
-| `removeCustomPart(String name)` | `void` | Removes a part by name |
+| `addCustomPart(String name, PartDefinition def)` | `void` | Adds a new part by name (defaults to `"standing"` pose) |
+| `addCustomPart(String name, PartDefinition def, String pose)` | `void` | Adds a new part by name for a specific entity pose |
+| `removeCustomPart(String name)` | `void` | Removes a part by name from all poses |
+| `removeCustomPart(String name, String pose)` | `void` | Removes a part by name for a specific pose |
 | `tickCustomParts()` | `void` | Repositions all parts using their positioners |
 | `setMainHitboxPickable(boolean)` | `void` | Sets whether the main hitbox can be targeted |
 | `isMainHitboxPickable()` | `boolean` | Whether the main hitbox can be targeted |

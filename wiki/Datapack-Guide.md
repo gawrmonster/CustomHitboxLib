@@ -105,10 +105,81 @@ Each JSON file defines parts for one or more entity types. The file can be a sin
 | `id` | One of `id` or `selector` | -- | Entity type ID (e.g. `minecraft:zombie`) |
 | `selector` | Alternative to `id` | -- | Object with `id` and/or `nbt` subfields |
 | `nbt` | No | -- | NBT string to match (e.g. `"Health:20.0"`) |
+| `pose` | No | `"standing"` | Entity pose this definition applies to (e.g. `"standing"`, `"crouching"`, `"swimming"`) |
 | `main_hitbox_pickable` | No | `true` | Can the player target the main hitbox |
 | `main_hitbox_pushable` | No | `true` | Does the main hitbox push entities |
 | `main_hitbox_collision` | No | `true` | Does the main hitbox collide with blocks |
 | `parts` | Yes | -- | Array of part definitions |
+
+---
+
+## Pose-Specific Parts
+
+Parts can be defined per entity pose. When the entity changes pose, CustomHitboxLib automatically switches to the matching parts definition.
+
+### Per-Pose Definition
+
+Add a `"pose"` field to the root of your definition:
+
+```json
+{
+  "id": "minecraft:player",
+  "pose": "crouching",
+  "parts": [
+    {
+      "name": "turtle_shell",
+      "width": 1.5,
+      "height": 0.5,
+      "offset": [0, 0, 0]
+    }
+  ]
+}
+```
+
+### Fallback Behavior
+
+- If at least one part is defined for the current pose, only those pose-specific parts are used.
+- If no parts are defined for the current pose at all, the `"standing"` definition set is used instead.
+- Datapacks without a `"pose"` field default to `"standing"` and remain fully backward-compatible.
+
+### Multiple Poses in One File
+
+You can define multiple pose variants in a single JSON file:
+
+```json
+[
+  {
+    "id": "minecraft:player",
+    "pose": "standing",
+    "parts": [
+      { "name": "cape", "width": 1.0, "height": 1.5, "offset": [0, 1.0, 0.3] }
+    ]
+  },
+  {
+    "id": "minecraft:player",
+    "pose": "crouching",
+    "parts": [
+      { "name": "cape", "width": 1.0, "height": 1.0, "offset": [0, 0.5, 0.3] }
+    ]
+  }
+]
+```
+
+### Supported Poses
+
+Use the lowercase Minecraft pose names:
+
+| Pose Name | Description |
+|---|---|
+| `standing` | Default standing pose |
+| `crouching` | Sneaking / crouching |
+| `swimming` | Swimming / in water |
+| `fall_flying` | Elytra gliding |
+| `sleeping` | Sleeping in a bed |
+| `spin_attack` | Trident spin attack |
+| `long_jumping` | Frog long jump |
+| `dying` | Death animation |
+| `sitting` | Sitting on a vehicle / saddle |
 
 ---
 

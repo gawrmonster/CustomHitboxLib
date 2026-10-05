@@ -7,6 +7,7 @@ import dev.customhitboxlib.api.ICustomMultipart;
 import dev.customhitboxlib.api.PartDefinition;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -50,6 +51,12 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Unique
     private boolean hitboxlib$mainHitboxCollision = true;
+
+    @Unique
+    private final Map<String, Map<Pose, PartDefinition>> hitboxlib$allDefinitions = new LinkedHashMap<>();
+
+    @Unique
+    private Pose hitboxlib$currentPose = Pose.STANDING;
 
     @Unique
     private float hitboxlib$syncedYRot = Float.NaN;
@@ -107,17 +114,53 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Override
     public void addCustomPart(String name, PartDefinition definition) {
-        hitboxlib$definitions.put(name, definition);
-        hitboxlib$initialized = false;
-        if (!hitboxlib$initialized) {
-            hitboxlib$initialize();
+        addCustomPart(name, definition, "standing");
+    }
+
+    @Override
+    public void addCustomPart(String name, PartDefinition definition, String pose) {
+        Pose poseEnum;
+        try {
+            poseEnum = Pose.valueOf(pose.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            CustomHitboxLib.LOGGER.warn("Unknown pose '{}' for part '{}', defaulting to STANDING", pose, name);
+            poseEnum = Pose.STANDING;
         }
+        hitboxlib$allDefinitions.computeIfAbsent(name, k -> new LinkedHashMap<>())
+            .put(poseEnum, definition);
+        hitboxlib$initialized = false;
+        hitboxlib$partArray = null;
     }
 
     @Override
     public void removeCustomPart(String name) {
+        hitboxlib$allDefinitions.remove(name);
         hitboxlib$definitions.remove(name);
         hitboxlib$instances.remove(name);
+        hitboxlib$initialized = false;
+        hitboxlib$partArray = null;
+    }
+
+    @Override
+    public void removeCustomPart(String name, String pose) {
+        Pose poseEnum;
+        try {
+            poseEnum = Pose.valueOf(pose.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            CustomHitboxLib.LOGGER.warn("Unknown pose '{}' for removing part '{}', defaulting to STANDING", pose, name);
+            poseEnum = Pose.STANDING;
+        }
+
+        Map<Pose, PartDefinition> poseMap = hitboxlib$allDefinitions.get(name);
+        if (poseMap != null) {
+            poseMap.remove(poseEnum);
+            if (poseMap.isEmpty()) {
+                hitboxlib$allDefinitions.remove(name);
+                hitboxlib$definitions.remove(name);
+                hitboxlib$instances.remove(name);
+            }
+        }
+
         hitboxlib$initialized = false;
         hitboxlib$partArray = null;
     }
@@ -129,6 +172,7 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
 
     @Override
     public PartEntity<?>[] getCustomParts() {
+        hitboxlib$ensureCorrectPose();
         if (!hitboxlib$initialized) {
             hitboxlib$initialize();
         }
@@ -179,9 +223,10 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     @Override
     public void tickCustomParts() {
         Entity self = (Entity) (Object) this;
-        if (hitboxlib$definitions.isEmpty()) {
+        if (hitboxlib$allDefinitions.isEmpty()) {
             return;
         }
+        hitboxlib$ensureCorrectPose();
         if (!hitboxlib$initialized) {
             hitboxlib$initialize();
         }
@@ -237,22 +282,61 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         }
     }
 
-    private void hitboxlib$initialize() {
+    @Unique
+    private void hitboxlib$ensureCorrectPose() {
         Entity self = (Entity) (Object) this;
-        for (Map.Entry<String, PartDefinition> entry : hitboxlib$definitions.entrySet()) {
-            if (!hitboxlib$instances.containsKey(entry.getKey())) {
-                PartDefinition def = entry.getValue();
-                CustomEntityPart part = new CustomEntityPart(self, entry.getKey(), def.dimensions(), def.pickable(), def.pushable(), def.collision(), def.suffocate());
-                part.setPositioner(def.positioner());
-                Vec3 pos = def.positioner().getPosition(self, 1.0F);
-                part.xo = part.getX();
-                part.yo = part.getY();
-                part.zo = part.getZ();
-                part.setPos(pos.x, pos.y, pos.z);
-                hitboxlib$instances.put(entry.getKey(), part);
+        Pose currentPose = self.getPose();
+        if (currentPose != hitboxlib$currentPose) {
+            hitboxlib$currentPose = currentPose;
+            hitboxlib$rebuildForPose(currentPose);
+        }
+    }
+
+    @Unique
+    private void hitboxlib$rebuildForPose(Pose pose) {
+        Entity self = (Entity) (Object) this;
+
+        boolean hasPoseDefinitions = false;
+        for (Map<Pose, PartDefinition> poseMap : hitboxlib$allDefinitions.values()) {
+            if (poseMap.containsKey(pose)) {
+                hasPoseDefinitions = true;
+                break;
             }
         }
+
+        Pose targetPose = hasPoseDefinitions ? pose : Pose.STANDING;
+
+        Map<String, PartDefinition> newDefinitions = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<Pose, PartDefinition>> entry : hitboxlib$allDefinitions.entrySet()) {
+            Map<Pose, PartDefinition> poseMap = entry.getValue();
+            PartDefinition def = poseMap.get(targetPose);
+            if (def != null) {
+                newDefinitions.put(entry.getKey(), def);
+            }
+        }
+        hitboxlib$definitions.clear();
+        hitboxlib$definitions.putAll(newDefinitions);
+
+        hitboxlib$instances.clear();
+        for (Map.Entry<String, PartDefinition> entry : newDefinitions.entrySet()) {
+            PartDefinition def = entry.getValue();
+            CustomEntityPart part = new CustomEntityPart(self, entry.getKey(), def.dimensions(), def.pickable(), def.pushable(), def.collision(), def.suffocate());
+            part.setPositioner(def.positioner());
+            Vec3 pos = def.positioner().getPosition(self, 1.0F);
+            part.xo = part.getX();
+            part.yo = part.getY();
+            part.zo = part.getZ();
+            part.setPos(pos.x, pos.y, pos.z);
+            hitboxlib$instances.put(entry.getKey(), part);
+        }
+
+        hitboxlib$partArray = null;
         hitboxlib$initialized = true;
+    }
+
+    private void hitboxlib$initialize() {
+        Entity self = (Entity) (Object) this;
+        hitboxlib$rebuildForPose(self.getPose());
     }
 
     @Inject(method = "pushEntities", at = @At("HEAD"))

@@ -24,8 +24,12 @@ public final class MultipartHelper {
     }
 
     public static void addPart(Entity entity, String name, EntityDimensions dimensions, PartPositioner positioner, boolean pickable, boolean pushable, boolean collision, boolean suffocate) {
+        addPart(entity, name, dimensions, positioner, pickable, pushable, collision, suffocate, "standing");
+    }
+
+    public static void addPart(Entity entity, String name, EntityDimensions dimensions, PartPositioner positioner, boolean pickable, boolean pushable, boolean collision, boolean suffocate, String pose) {
         if (entity instanceof ICustomMultipart mp) {
-            mp.addCustomPart(name, new PartDefinition(name, dimensions, positioner, pickable, pushable, collision, suffocate));
+            mp.addCustomPart(name, new PartDefinition(name, dimensions, positioner, pickable, pushable, collision, suffocate), pose);
         }
     }
 
@@ -49,9 +53,17 @@ public final class MultipartHelper {
         addPart(entity, name, EntityDimensions.scalable(width, height), positioner, pickable, pushable, collision, suffocate);
     }
 
+    public static void addPart(Entity entity, String name, float width, float height, PartPositioner positioner, boolean pickable, boolean pushable, boolean collision, boolean suffocate, String pose) {
+        addPart(entity, name, EntityDimensions.scalable(width, height), positioner, pickable, pushable, collision, suffocate, pose);
+    }
+
     public static void removePart(Entity entity, String name) {
+        removePart(entity, name, "standing");
+    }
+
+    public static void removePart(Entity entity, String name, String pose) {
         if (entity instanceof ICustomMultipart mp) {
-            mp.removeCustomPart(name);
+            mp.removeCustomPart(name, pose);
         }
     }
 
