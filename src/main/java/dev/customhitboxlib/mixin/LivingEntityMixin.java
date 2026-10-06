@@ -21,13 +21,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity implements ICustomMultipart {
@@ -132,11 +128,27 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         hitboxlib$partArray = null;
     }
 
+    @Unique
+    private void hitboxlib$unregisterPart(CustomEntityPart part) {
+        if (part != null) {
+            dev.customhitboxlib.util.CustomPartTracker.unregisterPart(part);
+        }
+    }
+
+    @Unique
+    private void hitboxlib$clearAllInstances() {
+        for (CustomEntityPart part : hitboxlib$instances.values()) {
+            dev.customhitboxlib.util.CustomPartTracker.unregisterPart(part);
+        }
+        hitboxlib$instances.clear();
+    }
+
     @Override
     public void removeCustomPart(String name) {
+        CustomEntityPart removed = hitboxlib$instances.remove(name);
+        hitboxlib$unregisterPart(removed);
         hitboxlib$allDefinitions.remove(name);
         hitboxlib$definitions.remove(name);
-        hitboxlib$instances.remove(name);
         hitboxlib$initialized = false;
         hitboxlib$partArray = null;
     }
@@ -155,14 +167,20 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         if (poseMap != null) {
             poseMap.remove(poseEnum);
             if (poseMap.isEmpty()) {
+                CustomEntityPart removed = hitboxlib$instances.remove(name);
+                hitboxlib$unregisterPart(removed);
                 hitboxlib$allDefinitions.remove(name);
                 hitboxlib$definitions.remove(name);
-                hitboxlib$instances.remove(name);
             }
         }
 
         hitboxlib$initialized = false;
         hitboxlib$partArray = null;
+    }
+
+    @Inject(method = "remove", at = @At("HEAD"))
+    private void hitboxlib$onRemove(Entity.RemovalReason reason, CallbackInfo ci) {
+        hitboxlib$clearAllInstances();
     }
 
     @Override
@@ -317,7 +335,7 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         hitboxlib$definitions.clear();
         hitboxlib$definitions.putAll(newDefinitions);
 
-        hitboxlib$instances.clear();
+        hitboxlib$clearAllInstances();
         for (Map.Entry<String, PartDefinition> entry : newDefinitions.entrySet()) {
             PartDefinition def = entry.getValue();
             CustomEntityPart part = new CustomEntityPart(self, entry.getKey(), def.dimensions(), def.pickable(), def.pushable(), def.collision(), def.suffocate());
@@ -328,6 +346,8 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
             part.zo = part.getZ();
             part.setPos(pos.x, pos.y, pos.z);
             hitboxlib$instances.put(entry.getKey(), part);
+
+            dev.customhitboxlib.util.CustomPartTracker.registerPart(part);
         }
 
         hitboxlib$partArray = null;
@@ -342,98 +362,59 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
     @Inject(method = "pushEntities", at = @At("HEAD"))
     private void hitboxlib$pushCustomParts(CallbackInfo ci) {
         LivingEntity self = (LivingEntity) (Object) this;
-        if (self.noPhysics)
-            return;
+        if (self.noPhysics) return;
+
+        boolean hasParts = hasCustomParts();
+        if (!hasParts && !isMainHitboxPushable()) return;
 
         Level level = self.level();
         AABB selfAabb = self.getBoundingBox();
-        PartEntity<?>[] selfParts = ((ICustomMultipart)self).getCustomParts();
+        PartEntity<?>[] selfParts = hasParts ? getCustomParts() : null;
 
-        Set<Entity> pushedEntities = Collections.newSetFromMap(new IdentityHashMap<>());
-        List<CustomEntityPart> selfPushableParts = new ArrayList<>();
+        AABB searchBox = selfAabb.inflate(2.0);
+        List<Entity> nearby = level.getEntities(self, searchBox);
+        if (nearby.isEmpty()) return;
 
-        if (selfParts != null) {
-            for (PartEntity<?> sp : selfParts) {
-                if (sp instanceof CustomEntityPart scp && scp.isPushable()) {
-                    selfPushableParts.add(scp);
-                }
-            }
-        }
+        for (Entity other : nearby) {
+            if (other.noPhysics || other.isPassenger()) continue;
 
-        AABB searchBox = selfAabb.inflate(4.0);
-        level.getEntities(self, searchBox).forEach(other -> {
-            if (pushedEntities.contains(other))
-                return;
-            if (other.noPhysics)
-                return;
-
-            // Skip if other is owner of self's parts, or self is owner of other's parts
             if (selfParts != null) {
+                boolean isRelated = false;
                 for (PartEntity<?> sp : selfParts) {
-                    if (sp == other)
-                        return;
-                    Entity owner = ((PartEntity<?>) sp).getParent();
-                    if (owner == other)
-                        return;
-                }
-            }
-            if (other instanceof ICustomMultipart otherMp && otherMp.hasCustomParts()) {
-                PartEntity<?>[] otherParts = otherMp.getCustomParts();
-                if (otherParts != null) {
-                    for (PartEntity<?> op : otherParts) {
-                        Entity owner = ((PartEntity<?>) op).getParent();
-                        if (owner == self)
-                            return;
+                    if (sp == other || sp.getParent() == other) {
+                        isRelated = true;
+                        break;
                     }
                 }
+                if (isRelated) continue;
             }
 
             if (isMainHitboxPushable() && selfAabb.intersects(other.getBoundingBox())) {
-                hitboxlib$pushBoth(self, other, self.getX(), self.getZ(), pushedEntities);
-                return;
+                hitboxlib$pushBoth(self, other, self.getX(), self.getZ());
+                continue;
             }
 
-            if (!selfPushableParts.isEmpty()) {
-                for (CustomEntityPart selfPart : selfPushableParts) {
-                    AABB partBox = selfPart.getBoundingBox();
+            if (selfParts != null) {
+                for (PartEntity<?> sp : selfParts) {
+                    if (!(sp instanceof CustomEntityPart scp) || !scp.isPushable()) continue;
 
-                    if (other instanceof ICustomMultipart otherMp && otherMp.hasCustomParts()) {
-                        PartEntity<?>[] otherParts = otherMp.getCustomParts();
-                        if (otherParts != null) {
-                            for (PartEntity<?> otherPart : otherParts) {
-                                if (!(otherPart instanceof CustomEntityPart otherCp) || !otherCp.isPushable())
-                                    continue;
-                                if (!partBox.intersects(otherCp.getBoundingBox()))
-                                    continue;
+                    AABB partBox = scp.getBoundingBox();
+                    if (!partBox.intersects(other.getBoundingBox())) continue;
 
-                                hitboxlib$pushBoth(selfPart, otherCp, selfPart.getX(), selfPart.getZ(), pushedEntities);
-                                pushedEntities.add(other);
-                                return;
-                            }
-                        }
-                    }
-
-                    if (partBox.intersects(other.getBoundingBox())) {
-                        hitboxlib$pushPartWithEntity(selfPart, other, selfPart.getX(), selfPart.getZ(), pushedEntities);
-                        pushedEntities.add(other);
-                        return;
-                    }
+                    hitboxlib$pushPartWithEntity(scp, other, scp.getX(), scp.getZ());
+                    break;
                 }
             }
-        });
+        }
     }
 
-    private void hitboxlib$pushBoth(Entity self, Entity other, double srcX, double srcZ, Set<Entity> pushedEntities) {
-        if (!other.isPushable())
-            return;
-        if (other.isPassenger())
-            return;
+    private void hitboxlib$pushBoth(Entity self, Entity other, double srcX, double srcZ) {
+        if (!other.isPushable() || other.isPassenger()) return;
 
         double dx = other.getX() - srcX;
         double dz = other.getZ() - srcZ;
         double d2 = Math.max(Math.abs(dx), Math.abs(dz));
-        if (d2 < 0.01)
-            return;
+        if (d2 < 0.01) return;
 
         d2 = Math.sqrt(d2);
         dx /= d2;
@@ -441,24 +422,17 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         double pushX = dx * 0.02;
         double pushZ = dz * 0.02;
 
-        if (!self.isPassenger())
-            self.push(-pushX, 0.0, -pushZ);
+        if (!self.isPassenger()) self.push(-pushX, 0.0, -pushZ);
         other.push(pushX, 0.0, pushZ);
-        pushedEntities.add(other);
     }
 
-    private void hitboxlib$pushPartWithEntity(Entity selfPart, Entity other, double srcX, double srcZ,
-            Set<Entity> pushedEntities) {
-        if (!other.isPushable())
-            return;
-        if (other.isPassenger())
-            return;
+    private void hitboxlib$pushPartWithEntity(Entity selfPart, Entity other, double srcX, double srcZ) {
+        if (!other.isPushable() || other.isPassenger()) return;
 
         double dx = other.getX() - srcX;
         double dz = other.getZ() - srcZ;
         double d2 = Math.max(Math.abs(dx), Math.abs(dz));
-        if (d2 < 0.01)
-            return;
+        if (d2 < 0.01) return;
 
         d2 = Math.sqrt(d2);
         dx /= d2;
@@ -466,9 +440,7 @@ public abstract class LivingEntityMixin extends Entity implements ICustomMultipa
         double pushX = dx * 0.02;
         double pushZ = dz * 0.02;
 
-        if (!selfPart.isPassenger())
-            selfPart.push(-pushX, 0.0, -pushZ);
+        if (!selfPart.isPassenger()) selfPart.push(-pushX, 0.0, -pushZ);
         other.push(pushX, 0.0, pushZ);
-        pushedEntities.add(other);
     }
 }
